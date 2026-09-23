@@ -19,6 +19,7 @@
 #include <driver/spi_master.h>
 #include <esp_lcd_panel_io.h>
 #include <esp_lcd_panel_vendor.h>
+#include <esp_lcd_st7735.h>
 #include <esp_lcd_panel_ops.h>
 #include <freertos/semphr.h>
 
@@ -197,7 +198,7 @@ void furi_hal_display_init(void) {
     };
     ESP_ERROR_CHECK(esp_lcd_new_panel_io_spi(LCD_SPI_HOST, &io_config, &io_handle));
 
-    /* Create ST7789 panel */
+    /* Create ST7735S panel */
     esp_lcd_panel_dev_config_t panel_config = {
         .reset_gpio_num = gpio_lcd_rst.pin,
 #if defined(BOARD_LCD_COLOR_ORDER_BGR) && BOARD_LCD_COLOR_ORDER_BGR
@@ -238,7 +239,7 @@ void furi_hal_display_init(void) {
     ESP_ERROR_CHECK(esp_lcd_panel_io_tx_param(io_handle, 0x01 /* SWRESET */, NULL, 0));
     vTaskDelay(pdMS_TO_TICKS(150));
 
-    ESP_ERROR_CHECK(esp_lcd_new_panel_st7789(io_handle, &panel_config, &panel_handle));
+    ESP_ERROR_CHECK(esp_lcd_new_panel_st7735(io_handle, &panel_config, &panel_handle));
 
     /* 3) esp_lcd does another RESX pulse, then SLPOUT + COLMOD + MADCTL. */
     ESP_ERROR_CHECK(esp_lcd_panel_reset(panel_handle));
@@ -252,11 +253,11 @@ void furi_hal_display_init(void) {
     ESP_ERROR_CHECK(esp_lcd_panel_set_gap(panel_handle, BOARD_LCD_GAP_X, BOARD_LCD_GAP_Y));
 
     /* 4) Belt-and-suspenders: pin down pixel format + normal display mode.
-     *    COLMOD 0x55 = 16 bits/pixel (RGB565) — matches bits_per_pixel=16 above;
+     *    ST7735S RGB565 uses COLMOD 0x05 (RGB565) — matches bits_per_pixel=16 above;
      *    NORON (0x13) = normal display mode (not partial/idle). Both are no-ops
      *    when the state is already right and cost nothing. */
     {
-        const uint8_t colmod = 0x55;
+        const uint8_t colmod = BOARD_LCD_COLMOD;
         ESP_ERROR_CHECK(esp_lcd_panel_io_tx_param(io_handle, 0x3A /* COLMOD */, &colmod, 1));
     }
     ESP_ERROR_CHECK(esp_lcd_panel_io_tx_param(io_handle, 0x13 /* NORON */, NULL, 0));
