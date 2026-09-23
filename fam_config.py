@@ -82,8 +82,8 @@ APPS = [
 
 # Boards without NFC / IR hardware – exclude the corresponding apps
 _board = os.environ.get("FLIPPER_BOARD", "")
-_boards_without_nfc = {"waveshare_c6", "waveshare_c6_1.9", "waveshare_c6_1.47"}
-_boards_without_ir = {"waveshare_c6", "waveshare_c6_1.9", "waveshare_c6_1.47"}
+_boards_without_nfc = {"waveshare_c6", "waveshare_c6_1.9", "waveshare_c6_1.47", "esp32s3_st7735"}
+_boards_without_ir = {"waveshare_c6", "waveshare_c6_1.9", "waveshare_c6_1.47", "esp32s3_st7735"}
 
 # Wolf3D shares Doom's requirements (PSRAM, ST7789 320xN, I2S speaker).
 # Doom läuft ebenfalls nur auf T-Embed (PSRAM + 16 MB Flash) — wird aber als
@@ -95,11 +95,11 @@ if _board in _boards_without_nfc:
 
 # waveshare_c6_1.9: external CC1101 module wired up (pins in board_waveshare_c6_1.9.h,
 # BOARD_HAS_SUBGHZ=1) → SubGHz built in. 1.47 has no module → stays excluded.
-_boards_without_subghz = {"waveshare_c6_1.47"}
+_boards_without_subghz = {"waveshare_c6_1.47", "esp32s3_st7735"}
 
 # NRF24 plugs into the LORA slot (T-Embed CC1101). Boards without the slot
 # don't have the required pin defines.
-_boards_without_nrf24 = {"waveshare_c6", "waveshare_c6_1.9", "waveshare_c6_1.47"}
+_boards_without_nrf24 = {"waveshare_c6", "waveshare_c6_1.9", "waveshare_c6_1.47", "esp32s3_st7735"}
 
 if _board in _boards_without_ir:
     APPS = [a for a in APPS if a not in ("infrared", "js_infrared")]
