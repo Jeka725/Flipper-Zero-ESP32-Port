@@ -24,6 +24,7 @@
 #define BOARD_PIN_BUTTON_BOOT    BOARD_PIN_BUTTON_OK
 
 #define BOARD_PIN_BATTERY_ADC    UINT16_MAX
+#define BOARD_HAS_BATTERY        0
 #define FURI_HAL_POWER_VIRTUAL_CAPACITY_MAH (0U) /* No battery hardware on this board. */
 
 /* ST7735S SPI pins — DO NOT CHANGE. */
