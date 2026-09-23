@@ -54,11 +54,15 @@ void furi_hal_init(void) {
     furi_hal_info_init();
     furi_hal_power_init();
     furi_hal_crypto_init();
+#if BOARD_HAS_SUBGHZ
     furi_hal_subghz_init();
+#endif
     furi_hal_usb_init();
     furi_hal_light_init();
     furi_hal_display_init();
     furi_hal_speaker_init();
+#if BOARD_HAS_NFC
     furi_hal_nfc_init();
+#endif
     ESP_LOGI(TAG, "Init complete");
 }
