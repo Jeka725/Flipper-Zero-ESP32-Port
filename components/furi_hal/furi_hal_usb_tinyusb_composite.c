@@ -12,7 +12,9 @@
 #include "tinyusb.h"
 #include "tusb_cdc_acm.h"
 #include "class/hid/hid_device.h"
+#if CONFIG_TINYUSB_MSC_ENABLED
 #include "class/msc/msc_device.h"
+#endif
 
 /* Low-level access to switch the internal USB FSLS PHY mux between the OTG
  * controller and the USB-Serial-JTAG controller (see composite_uninstall). */
@@ -43,18 +45,23 @@
 #define CDC_EP_IN         0x83
 #define CDC_EP_BUF_SIZE   64
 
-#define MSC_EP_OUT      0x04
-#define MSC_EP_IN       0x84
-#define MSC_EP_BUF_SIZE 64
 
 #define ITF_NUM_HID       0
 #define ITF_NUM_CDC_NOTIF 1
 #define ITF_NUM_CDC_DATA  2
-#define ITF_NUM_MSC       3
-#define ITF_TOTAL         4
-
-#define COMP_CONFIG_TOTAL_LEN \
+#if CONFIG_TINYUSB_MSC_ENABLED
+#define MSC_EP_OUT      0x04
+#define MSC_EP_IN       0x84
+#define MSC_EP_BUF_SIZE 64
+#define ITF_NUM_MSC     3
+#define ITF_TOTAL       4
+#define COMP_CONFIG_TOTAL_LEN \\
     (TUD_CONFIG_DESC_LEN + TUD_HID_DESC_LEN + TUD_CDC_DESC_LEN + TUD_MSC_DESC_LEN)
+#else
+#define ITF_TOTAL       3
+#define COMP_CONFIG_TOTAL_LEN \\
+    (TUD_CONFIG_DESC_LEN + TUD_HID_DESC_LEN + TUD_CDC_DESC_LEN)
+#endif
 
 /* Forward-declared from furi_hal_usb_hid_tinyusb.c */
 extern const uint8_t* furi_hal_usb_hid_report_desc(size_t* out_len);
@@ -89,6 +96,7 @@ static const uint8_t s_composite_config_desc[] = {
         CDC_EP_OUT,
         CDC_EP_IN,
         CDC_EP_BUF_SIZE),
+#if CONFIG_TINYUSB_MSC_ENABLED
     /* MSC */
     TUD_MSC_DESCRIPTOR(
         ITF_NUM_MSC,
@@ -96,6 +104,7 @@ static const uint8_t s_composite_config_desc[] = {
         MSC_EP_OUT,
         MSC_EP_IN,
         MSC_EP_BUF_SIZE),
+#endif
 };
 
 static uint8_t s_config_desc_writable[sizeof(s_composite_config_desc)];
