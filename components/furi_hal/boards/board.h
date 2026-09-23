@@ -8,6 +8,11 @@
 
 #pragma once
 
+/* Legacy display pixel format default; ST7735S boards override this with 0x05. */
+#ifndef BOARD_LCD_COLMOD
+#define BOARD_LCD_COLMOD 0x55
+#endif
+
 #if defined(BOARD_INCLUDE)
 /* CMake sets BOARD_INCLUDE to e.g. "boards/board_waveshare_c6_1.9.h" */
 #include BOARD_INCLUDE
