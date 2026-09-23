@@ -308,3 +308,6 @@ This port preserves the original Flipper Zero architecture as closely as possibl
 - **Applications** compile with minimal changes (`#include` path adjustments, no-op stubs for missing hardware like 1-Wire)
 - **`malloc` is redefined to `calloc`** — STM32 heap starts zeroed, ESP32 does not
 - **Crypto** is stubbed (no Flipper-Enclave key) — affects encrypted SubGHz keystores; everything else uses real mbedtls
+
+
+<!-- CI marker: ESP32-S3 N16R8 ST7735S build validation -->
