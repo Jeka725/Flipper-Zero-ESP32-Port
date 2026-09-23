@@ -52,7 +52,6 @@ endif()
 if(FLIPPER_BOARD STREQUAL "esp32s3_st7735")
     list(APPEND FURI_HAL_SRCS "furi_hal_power_no_battery.c")
     # No SD card on this board, so the USB mass-storage implementation is absent.
-    list(REMOVE_ITEM FURI_HAL_SRCS "furi_hal_usb_msc.c")
 else()
     list(APPEND FURI_HAL_SRCS
         "furi_hal_bq27220.c"
@@ -72,8 +71,10 @@ if(IDF_TARGET STREQUAL "esp32s3" OR IDF_TARGET STREQUAL "esp32s2")
     list(APPEND FURI_HAL_SRCS
         "furi_hal_usb_hid_tinyusb.c"
         "furi_hal_usb_tinyusb_composite.c"
-        "furi_hal_usb_msc.c"
     )
+    if(NOT FLIPPER_BOARD STREQUAL "esp32s3_st7735")
+        list(APPEND FURI_HAL_SRCS "furi_hal_usb_msc.c")
+    endif()
     list(APPEND FURI_HAL_REQUIRES espressif__esp_tinyusb)
 else()
     list(APPEND FURI_HAL_SRCS "furi_hal_usb_hid_stub.c")
