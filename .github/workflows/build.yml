@@ -22,6 +22,12 @@ jobs:
             artifact_name: flipper-esp32s3-generic
             chip: esp32s3
             flash_size: 16MB
+          - name: esp32s3_st7735
+            script_key: esp32s3_st7735
+            build_dir: build_s3_st7735
+            artifact_name: flipper-esp32s3-st7735
+            chip: esp32s3
+            flash_size: 16MB
           - name: lilygo_t_embed_cc1101
             script_key: t_embed
             build_dir: build_t_embed
