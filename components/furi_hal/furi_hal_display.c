@@ -171,7 +171,7 @@ void furi_hal_display_init(void) {
     /* Initialize SPI bus */
     spi_bus_config_t bus_cfg = {
         .mosi_io_num = gpio_lcd_din.pin,
-        .miso_io_num = gpio_sdcard_miso.pin,
+        .miso_io_num = GPIO_NUM_NC,
         .sclk_io_num = gpio_lcd_clk.pin,
         .quadwp_io_num = -1,
         .quadhd_io_num = -1,
@@ -208,7 +208,7 @@ void furi_hal_display_init(void) {
 #endif
         .bits_per_pixel = 16,
     };
-    /* --- Bring the ST7789 to a known-clean state, every boot --------------
+    /* --- Bring the ST7735S to a known-clean state, every boot --------------
      * A software reset (esp_restart) does NOT power-cycle the display: the
      * ST7789 keeps every register — MADCTL/colour-order, COLMOD, inversion,
      * rotation. That happens after an `esptool` flash *and* after any other
