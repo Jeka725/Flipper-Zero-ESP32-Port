@@ -72,6 +72,19 @@
 #define BOARD_PIN_CC1101_MOSI    UINT16_MAX
 #define BOARD_PIN_CC1101_GDO0    UINT16_MAX
 
+#define BOARD_PIN_IR_TX           UINT16_MAX
+#define BOARD_PIN_IR_RX           UINT16_MAX
+
+#define BOARD_PIN_NFC_SCL         UINT16_MAX
+#define BOARD_PIN_NFC_SDA         UINT16_MAX
+#define BOARD_PIN_NFC_IRQ         UINT16_MAX
+#define BOARD_PIN_NFC_RST         UINT16_MAX
+#define BOARD_NFC_I2C_PORT        I2C_NUM_0
+
+#define BOARD_PIN_RFID_RX         UINT16_MAX
+#define BOARD_PIN_RFID_TX         UINT16_MAX
+#define BOARD_RFID_UART_NUM       1
+
 #define BOARD_HAS_NRF24          0
 #define BOARD_HAS_TOUCH          0
 #define BOARD_HAS_ENCODER       0
