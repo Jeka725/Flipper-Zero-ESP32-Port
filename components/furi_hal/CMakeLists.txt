@@ -49,13 +49,13 @@ else()
 endif()
 
 
-if(NOT DEFINED BOARD_HAS_BATTERY OR BOARD_HAS_BATTERY)
+if(FLIPPER_BOARD STREQUAL "esp32s3_st7735")
+    list(APPEND FURI_HAL_SRCS "furi_hal_power_no_battery.c")
+else()
     list(APPEND FURI_HAL_SRCS
         "furi_hal_bq27220.c"
         "furi_hal_bq25896.c"
     )
-else()
-    list(APPEND FURI_HAL_SRCS "furi_hal_power_no_battery.c")
 endif()
 
 set(FURI_HAL_REQUIRES
