@@ -1,6 +1,6 @@
 /**
  * @file furi_hal_display.h
- * Display HAL API (ESP32-C6, ST7789V2 via esp_lcd)
+ * Display HAL API (ESP32-S3, ST7735S via esp_lcd)
  */
 
 #pragma once
@@ -14,14 +14,14 @@
 extern "C" {
 #endif
 
-/** Initialize display hardware (ST7789V2 via SPI + esp_lcd)
+/** Initialize display hardware (ST7735S via SPI + esp_lcd)
  */
 void furi_hal_display_init(void);
 
 /** Commit display buffer to screen
  *
  * Converts u8g2 mono framebuffer (128x64, 1bpp tile format) to
- * RGB565 with aspect-fit scaling and sends it to ST7789V2 via DMA.
+ * RGB565 with aspect-fit scaling and sends it to ST7735S via DMA.
  *
  * @param      data  pointer to u8g2 framebuffer data
  * @param      size  size of framebuffer data in bytes
