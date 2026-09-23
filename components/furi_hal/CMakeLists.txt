@@ -51,6 +51,8 @@ endif()
 
 if(FLIPPER_BOARD STREQUAL "esp32s3_st7735")
     list(APPEND FURI_HAL_SRCS "furi_hal_power_no_battery.c")
+    # No SD card on this board, so the USB mass-storage implementation is absent.
+    list(REMOVE_ITEM FURI_HAL_SRCS "furi_hal_usb_msc.c")
 else()
     list(APPEND FURI_HAL_SRCS
         "furi_hal_bq27220.c"
