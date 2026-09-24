@@ -113,9 +113,9 @@ bool animation_manager_interact_process(AnimationManager* animation_manager) {
 static void animation_manager_start_new_idle(AnimationManager* animation_manager) {
     furi_assert(animation_manager);
 
-    FURI_LOG_I(TAG, "Selecting idle animation...");
+    
     StorageAnimation* new_animation = animation_manager_select_idle_animation(animation_manager);
-    FURI_LOG_I(TAG, "Selected animation: %p", new_animation);
+    
 
     animation_manager_replace_current_animation(animation_manager, new_animation);
     const BubbleAnimation* bubble_animation =
@@ -134,16 +134,6 @@ static void animation_manager_start_new_idle(AnimationManager* animation_manager
             FURI_LOG_I(TAG, "ANIM: ok=0 loaded=%u fps=%u err=%u", loaded, fps, err);
         }
     }
-    FURI_LOG_I(
-        TAG,
-        "Animation loaded: %s, frames: %u+%u, fps: %u, duration: %u, w=%u, h=%u",
-        animation_storage_get_meta(new_animation)->name,
-        bubble_animation->passive_frames,
-        bubble_animation->active_frames,
-        bubble_animation->icon_animation.frame_rate,
-        bubble_animation->duration,
-        bubble_animation->icon_animation.width,
-        bubble_animation->icon_animation.height);
     animation_manager->state = AnimationManagerStateIdle;
     furi_timer_start(animation_manager->idle_animation_timer, bubble_animation->duration * 1000);
 }
@@ -157,7 +147,7 @@ static void animation_manager_replace_current_animation(
     const BubbleAnimation* animation = animation_storage_get_bubble_animation(storage_animation);
     bubble_animation_view_set_animation(animation_manager->animation_view, animation);
     const char* new_name = animation_storage_get_meta(storage_animation)->name;
-    FURI_LOG_I(TAG, "Select '%s' animation", new_name);
+    
     animation_manager->current_animation = storage_animation;
 
     if(previous_animation) {
@@ -166,17 +156,17 @@ static void animation_manager_replace_current_animation(
 }
 
 AnimationManager* animation_manager_alloc(void) {
-    FURI_LOG_I(TAG, "Alloc start");
+    
     AnimationManager* animation_manager = malloc(sizeof(AnimationManager));
     memset(animation_manager, 0, sizeof(AnimationManager));
 
-    FURI_LOG_I(TAG, "Creating bubble animation view...");
+    
     animation_manager->animation_view = bubble_animation_view_alloc();
-    FURI_LOG_I(TAG, "Bubble animation view: %p", animation_manager->animation_view);
+    
 
     animation_manager->view_stack = view_stack_alloc();
     View* animation_view = bubble_animation_get_view(animation_manager->animation_view);
-    FURI_LOG_I(TAG, "View from bubble: %p", animation_view);
+    
     view_stack_add_view(animation_manager->view_stack, animation_view);
     animation_manager->freezed_animation_name = furi_string_alloc();
 
@@ -187,9 +177,9 @@ AnimationManager* animation_manager_alloc(void) {
         animation_manager_interact_callback,
         animation_manager);
 
-    FURI_LOG_I(TAG, "Starting first idle animation...");
+    
     animation_manager_start_new_idle(animation_manager);
-    FURI_LOG_I(TAG, "Alloc complete");
+    
 
     return animation_manager;
 }
@@ -236,19 +226,8 @@ static StorageAnimation*
             animation_storage_find_animation(LITTLEFS_TEST_ANIMATION_NAME);
         if(littlefs_animation) {
             const BubbleAnimation* probe = animation_storage_get_bubble_animation(littlefs_animation);
-            FURI_LOG_I(
-                TAG,
-                "LittleFS animation selected: %s frames=%u size=%ux%u fps=%u",
-                LITTLEFS_TEST_ANIMATION_NAME,
-                (unsigned)probe->icon_animation.frame_count,
-                (unsigned)probe->icon_animation.width,
-                (unsigned)probe->icon_animation.height,
-                (unsigned)probe->icon_animation.frame_rate);
-            FURI_LOG_I(
-                TAG,
-                "Heap/PSRAM free after animation load: %u/%u",
-                (unsigned)heap_caps_get_free_size(MALLOC_CAP_INTERNAL),
-                (unsigned)heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
+            
+            
             return littlefs_animation;
         }
     }
@@ -256,7 +235,7 @@ static StorageAnimation*
     /* Pick a random compiled-in animation. */
     const StorageAnimation* list = dolphin_internal;
     size_t count = dolphin_internal_size;
-    FURI_LOG_I(TAG, "Animation list: internal=%u (LittleFS external lookup enabled)", count);
+    
 
     uint32_t whole_weight = 0;
     for(size_t i = 0; i < count; ++i) {
@@ -311,10 +290,7 @@ void animation_manager_unload_and_stall_animation(AnimationManager* animation_ma
     }
     furi_timer_stop(animation_manager->idle_animation_timer);
 
-    FURI_LOG_I(
-        TAG,
-        "Unload animation '%s'",
-        animation_storage_get_meta(animation_manager->current_animation)->name);
+    
 
     StorageAnimationManifestInfo* meta =
         animation_storage_get_meta(animation_manager->current_animation);
@@ -352,10 +328,7 @@ void animation_manager_load_and_continue_animation(AnimationManager* animation_m
         animation_manager_start_new_idle(animation_manager);
     }
 
-    FURI_LOG_I(
-        TAG,
-        "Load animation '%s'",
-        animation_storage_get_meta(animation_manager->current_animation)->name);
+    
 
     bubble_animation_unfreeze(animation_manager->animation_view);
     furi_string_reset(animation_manager->freezed_animation_name);
