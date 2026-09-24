@@ -110,10 +110,24 @@ jobs:
           rm -rf "$STAGE"
           mkdir -p "$STAGE/bootloader" "$STAGE/partition_table"
 
-          # Firmware binaries
-          cp "$BUILD/furi_esp32.bin"                          "$STAGE/furi_esp32.bin"
-          cp "$BUILD/bootloader/bootloader.bin"               "$STAGE/bootloader/bootloader.bin"
-          cp "$BUILD/partition_table/partition-table.bin"     "$STAGE/partition_table/partition-table.bin"
+          # Full image: bootloader + partition table + application in ONE .bin.
+          # Standard ESP-IDF offsets: bootloader=0x0, partition table=0x8000,
+          # application=0x10000.
+          esptool.py --chip "$CHIP" merge_bin \
+            -o "$STAGE/${BOARD}.bin" \
+            --flash_size "$FLASH_SIZE" \
+            0x0 "$BUILD/bootloader/bootloader.bin" \
+            0x8000 "$BUILD/partition_table/partition-table.bin" \
+            0x10000 "$BUILD/furi_esp32.bin"
+
+          # OTA is application-only by design. Bootloader and partition table
+          # are not part of an OTA update.
+          cp "$BUILD/furi_esp32.bin" "$STAGE/${BOARD}-ota.bin"
+
+          # Keep individual files for manual/low-level flashing too.
+          cp "$BUILD/furi_esp32.bin" "$STAGE/furi_esp32.bin"
+          cp "$BUILD/bootloader/bootloader.bin" "$STAGE/bootloader/bootloader.bin"
+          cp "$BUILD/partition_table/partition-table.bin" "$STAGE/partition_table/partition-table.bin"
 
           # ESP-IDF flash-args file (contains verified offsets and flash params)
           if [ -f "$BUILD/flash_project_args" ]; then
