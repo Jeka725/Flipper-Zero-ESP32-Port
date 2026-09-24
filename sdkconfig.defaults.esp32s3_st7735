@@ -26,3 +26,8 @@ CONFIG_BT_BLE_ENABLED=y
 # The ESP-IDF 5.4.1 TinyUSB config header references this symbol even when MSC is disabled.
 CONFIG_TINYUSB_MSC_ENABLED=n
 CONFIG_TINYUSB_MSC_BUFSIZE=512
+
+# LittleFS animation/resource storage.
+CONFIG_LITTLEFS=y
+CONFIG_LITTLEFS_CACHE_SIZE=512
+CONFIG_LITTLEFS_LOOKAHEAD_SIZE=128
