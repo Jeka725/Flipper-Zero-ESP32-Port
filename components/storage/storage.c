@@ -20,6 +20,7 @@
 #include <furi.h>
 #include <furi_hal_sd.h>
 #include <furi_hal_spi_bus.h>
+#include "boards/board.h"
 
 #include <esp_log.h>
 
