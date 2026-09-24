@@ -13,6 +13,7 @@
 
 #define BOARD_NAME        "ESP32-S3 N16R8 ST7735S 1.8"
 #define BOARD_ID          "esp32s3_st7735"
+#define BOARD_ST7735S     1
 #define BOARD_TARGET      "esp32s3"
 
 /* Five active-low buttons with internal pull-ups. */
