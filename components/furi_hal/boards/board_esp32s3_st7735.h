@@ -44,8 +44,8 @@
 #define BOARD_LCD_CMD_BITS       8
 #define BOARD_LCD_PARAM_BITS    8
 #define BOARD_LCD_SWAP_XY        true
-#define BOARD_LCD_MIRROR_X       false
-#define BOARD_LCD_MIRROR_Y       false
+#define BOARD_LCD_MIRROR_X       true
+#define BOARD_LCD_MIRROR_Y       true
 #define BOARD_LCD_INVERT_COLOR   false
 #define BOARD_LCD_GAP_X          0
 #define BOARD_LCD_GAP_Y          0
