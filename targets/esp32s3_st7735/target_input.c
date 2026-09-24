@@ -2,8 +2,8 @@
  * @file target_input.c
  * Five-button input driver for ESP32-S3 N16R8 ST7735S board.
  *
- * Physical wiring is GPIO9,11,12,13,14. Logical mapping: GPIO9=LEFT,
- * GPIO11=RIGHT, GPIO12=UP, GPIO13=DOWN, GPIO14=OK.
+ * Exact logical mapping: OK=GPIO14, RIGHT=GPIO13, LEFT=GPIO12,
+ * UP=GPIO11, DOWN=GPIO9.
  * All buttons are active-low and use the ESP32 internal pull-ups.
  */
 #include "target_input.h"
@@ -30,10 +30,10 @@ typedef struct {
 } Button;
 
 static Button buttons[] = {
-    {(gpio_num_t)BOARD_PIN_BUTTON_UP, InputKeyLeft, false, false, 0, 0, 0, false, false},
-    {(gpio_num_t)BOARD_PIN_BUTTON_DOWN, InputKeyRight, false, false, 0, 0, 0, false, false},
-    {(gpio_num_t)BOARD_PIN_BUTTON_LEFT, InputKeyUp, false, false, 0, 0, 0, false, false},
-    {(gpio_num_t)BOARD_PIN_BUTTON_RIGHT, InputKeyDown, false, false, 0, 0, 0, false, false},
+    {(gpio_num_t)BOARD_PIN_BUTTON_UP, InputKeyUp, false, false, 0, 0, 0, false, false},
+    {(gpio_num_t)BOARD_PIN_BUTTON_DOWN, InputKeyDown, false, false, 0, 0, 0, false, false},
+    {(gpio_num_t)BOARD_PIN_BUTTON_LEFT, InputKeyLeft, false, false, 0, 0, 0, false, false},
+    {(gpio_num_t)BOARD_PIN_BUTTON_RIGHT, InputKeyRight, false, false, 0, 0, 0, false, false},
     {(gpio_num_t)BOARD_PIN_BUTTON_OK, InputKeyOk, false, false, 0, 0, 0, false, false},
 };
 
@@ -70,7 +70,7 @@ void target_input_init(void) {
         buttons[i].debounce = INPUT_DEBOUNCE_POLLS;
         buttons[i].back_on_long = false;
     }
-    FURI_LOG_I(TAG, "5-button input: GPIO9=LEFT GPIO11=RIGHT GPIO12=UP GPIO13=DOWN GPIO14=OK; GPIO9+GPIO11 hold=2s Back");
+    FURI_LOG_I(TAG, "5-button input: OK=14 RIGHT=13 LEFT=12 UP=11 DOWN=9; UP+DOWN hold=2s Back");
 }
 
 void target_input_poll(FuriPubSub* pubsub, uint32_t* sequence_counter) {
