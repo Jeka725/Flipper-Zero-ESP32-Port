@@ -10,13 +10,10 @@ typedef struct {
     Gui* gui;
     ViewDispatcher* dispatcher;
     Submenu* submenu;
+    bool active;
 } AndroidBleTestApp;
 
-static void android_ble_test_burst(void* context, uint32_t index) {
-    UNUSED(index);
-    furi_assert(context);
-
-    /* Toggle the BLE test beacon. It stays active until the same item is selected again. */
+static bool android_ble_test_start(AndroidBleTestApp* app) {
     const uint8_t adv_data[] = {
         0x02, 0x01, 0x06,
         0x0E, 0x09,
@@ -34,32 +31,48 @@ static void android_ble_test_burst(void* context, uint32_t index) {
 
     if(!furi_hal_bt_is_available()) {
         FURI_LOG_E(TAG, "BLE is not available");
-        return;
+        return false;
     }
 
     if(!furi_hal_bt_extra_beacon_set_config(&config) ||
        !furi_hal_bt_extra_beacon_set_data(adv_data, sizeof(adv_data))) {
         FURI_LOG_E(TAG, "Failed to configure BLE test beacon");
-        return;
+        return false;
     }
 
-    static bool active = false;
-    if(active) {
-        furi_hal_bt_extra_beacon_stop();
-        active = false;
-        submenu_change_item_label(app->submenu, 0, "Start BLE test");
-        FURI_LOG_I(TAG, "Android BLE test stopped");
-    } else if(furi_hal_bt_extra_beacon_start()) {
-        active = true;
-        submenu_change_item_label(app->submenu, 0, "Stop BLE test");
-        FURI_LOG_I(TAG, "Android BLE test started");
-    } else {
+    if(!furi_hal_bt_extra_beacon_start()) {
         FURI_LOG_E(TAG, "Failed to start BLE test beacon");
+        return false;
+    }
+
+    app->active = true;
+    FURI_LOG_I(TAG, "BLE test beacon started");
+    return true;
+}
+
+static void android_ble_test_stop(AndroidBleTestApp* app) {
+    if(app->active) {
+        furi_hal_bt_extra_beacon_stop();
+        app->active = false;
+        FURI_LOG_I(TAG, "BLE test beacon stopped");
+    }
+}
+
+static void android_ble_test_toggle(void* context, uint32_t index) {
+    UNUSED(index);
+    AndroidBleTestApp* app = context;
+    furi_assert(app);
+
+    if(app->active) {
+        android_ble_test_stop(app);
+    } else {
+        android_ble_test_start(app);
     }
 }
 
 static uint32_t android_ble_test_exit(void* context) {
-    UNUSED(context);
+    AndroidBleTestApp* app = context;
+    if(app) android_ble_test_stop(app);
     return VIEW_NONE;
 }
 
@@ -70,6 +83,7 @@ int32_t android_ble_test_app(void* p) {
     app->gui = furi_record_open(RECORD_GUI);
     app->dispatcher = view_dispatcher_alloc();
     app->submenu = submenu_alloc();
+    app->active = false;
 
     view_dispatcher_attach_to_gui(
         app->dispatcher, app->gui, ViewDispatcherTypeFullscreen);
@@ -77,9 +91,9 @@ int32_t android_ble_test_app(void* p) {
     submenu_set_header(app->submenu, "Android BLE test");
     submenu_add_item(
         app->submenu,
-        "Start BLE test",
+        "Start / Stop BLE test",
         0,
-        android_ble_test_burst,
+        android_ble_test_toggle,
         app);
 
     view_set_previous_callback(submenu_get_view(app->submenu), android_ble_test_exit);
@@ -91,7 +105,7 @@ int32_t android_ble_test_app(void* p) {
     view_dispatcher_switch_to_view(app->dispatcher, 0);
     view_dispatcher_run(app->dispatcher);
 
-    furi_hal_bt_extra_beacon_stop();
+    android_ble_test_stop(app);
     view_dispatcher_remove_view(app->dispatcher, 0);
     submenu_free(app->submenu);
     view_dispatcher_free(app->dispatcher);
