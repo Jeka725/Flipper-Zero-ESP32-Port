@@ -1,0 +1,3 @@
+[wokwi]
+version = 1
+firmware = "esp32s3_st7735.bin"
