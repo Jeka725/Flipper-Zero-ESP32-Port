@@ -86,3 +86,6 @@ void animation_storage_free_storage_animation(StorageAnimation** storage_animati
  * of animations in inner flash.
  */
 void animation_storage_initialize_internal_animations(void);
+
+/** One-shot diagnostic code for the external LittleFS animation path. */
+uint8_t animation_storage_get_last_error(void);
