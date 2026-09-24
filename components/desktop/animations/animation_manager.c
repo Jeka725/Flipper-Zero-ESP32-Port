@@ -120,7 +120,8 @@ static void animation_manager_start_new_idle(AnimationManager* animation_manager
         animation_storage_get_bubble_animation(animation_manager->current_animation);
     FURI_LOG_I(
         TAG,
-        "Animation: frames=%u+%u, duration=%u, frame_rate=%u, w=%u, h=%u",
+        "Animation loaded: %s, frames: %u+%u, fps: %u, duration: %u, w=%u, h=%u",
+        animation_storage_get_meta(new_animation)->name,
         bubble_animation->passive_frames,
         bubble_animation->active_frames,
         bubble_animation->duration,
@@ -210,10 +211,11 @@ static StorageAnimation*
     animation_manager_select_idle_animation(AnimationManager* animation_manager) {
     (void)animation_manager;
 
-    /* Pick a random internal animation based on weight, filtering by validity */
-    const StorageAnimation* list;
-    size_t count = animation_storage_get_internal_list(&list);
-    FURI_LOG_I(TAG, "Internal animation count: %u", count);
+    /* Pick a random compiled-in animation. External LittleFS animations are
+     * loaded by animation_storage_find_animation() and are logged separately. */
+    const StorageAnimation* list = dolphin_internal;
+    size_t count = dolphin_internal_size;
+    FURI_LOG_I(TAG, "Animation list: internal=%u (LittleFS external lookup enabled)", count);
 
     uint32_t whole_weight = 0;
     for(size_t i = 0; i < count; ++i) {
