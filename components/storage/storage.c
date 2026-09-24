@@ -23,6 +23,10 @@
 
 #include <esp_log.h>
 
+#ifdef BOARD_HAS_LITTLEFS
+#include <esp_vfs_littlefs.h>
+#endif
+
 static const char* TAG = "Storage";
 
 #define SD_MOUNT_POINT "/sdcard"
@@ -30,6 +34,14 @@ static const char* TAG = "Storage";
 
 static inline void storage_sd_bus_lock(void);
 static inline void storage_sd_bus_unlock(void);
+
+static inline bool storage_is_ready(const Storage* storage) {
+#ifdef BOARD_HAS_LITTLEFS
+    return storage->sd_mounted || storage->littlefs_mounted;
+#else
+    return storage->sd_mounted;
+#endif
+}
 
 static const char* storage_current_appid(void) {
     FuriThreadId thread_id = furi_thread_get_current_id();
@@ -78,11 +90,18 @@ static void storage_ensure_app_alias_dir(Storage* storage, const char* real_root
 }
 
 static inline void storage_sd_bus_lock(void) {
+#ifdef BOARD_HAS_LITTLEFS
+    if(!BOARD_HAS_LITTLEFS) furi_hal_spi_bus_lock();
+#else
     furi_hal_spi_bus_lock();
+#endif
 }
-
 static inline void storage_sd_bus_unlock(void) {
+#ifdef BOARD_HAS_LITTLEFS
+    if(!BOARD_HAS_LITTLEFS) furi_hal_spi_bus_unlock();
+#else
     furi_hal_spi_bus_unlock();
+#endif
 }
 
 /* ---- Internal File struct ---- */
@@ -104,7 +123,13 @@ static bool storage_map_path(const char* path, char* out, size_t out_size) {
     if(!path || !out) return false;
 
     if(strncmp(path, STORAGE_EXT_PATH_PREFIX, 4) == 0) {
-        snprintf(out, out_size, "%s%s", SD_MOUNT_POINT, path + 4);
+        snprintf(out, out_size, "%s%s",
+#ifdef BOARD_HAS_LITTLEFS
+             BOARD_LITTLEFS_BASE_PATH,
+#else
+             SD_MOUNT_POINT,
+#endif
+             path + 4);
         return true;
     }
     if(strncmp(path, STORAGE_ANY_PATH_PREFIX, 4) == 0) {
@@ -258,7 +283,7 @@ bool storage_file_open(
         return false;
     }
 
-    if(!file->storage->sd_mounted) {
+    if(!storage_is_ready(file->storage)) {
         file->error_id = FSE_NOT_READY;
         return false;
     }
@@ -866,7 +891,7 @@ FS_Error storage_common_fs_info(
     furi_assert(storage);
     (void)fs_path;
 
-    if(!storage->sd_mounted) return FSE_NOT_READY;
+    if(!storage_is_ready(storage)) return FSE_NOT_READY;
 
     FuriHalSdInfo info;
     if(furi_hal_sd_info(&info) != FuriStatusOk) return FSE_INTERNAL;
@@ -1067,6 +1092,22 @@ int32_t storage_srv(void* p) {
     storage->pubsub = furi_pubsub_alloc();
     storage->mutex = furi_mutex_alloc(FuriMutexTypeNormal);
 
+#ifdef BOARD_HAS_LITTLEFS
+    esp_vfs_littlefs_conf_t littlefs_conf = {
+        .base_path = BOARD_LITTLEFS_BASE_PATH,
+        .partition_label = BOARD_LITTLEFS_PARTITION,
+        .format_if_mount_failed = false,
+        .dont_mount = false,
+    };
+    esp_err_t littlefs_err = esp_vfs_littlefs_register(&littlefs_conf);
+    if(littlefs_err == ESP_OK) {
+        storage->littlefs_mounted = true;
+        ESP_LOGI(TAG, "LittleFS mounted at %s", BOARD_LITTLEFS_BASE_PATH);
+    } else {
+        ESP_LOGE(TAG, "LittleFS mount failed: %s", esp_err_to_name(littlefs_err));
+    }
+#endif
+
     /* Try to mount SD card */
     ESP_LOGI(TAG, "Attempting SD card mount...");
     if(furi_hal_sd_mount()) {
@@ -1090,7 +1131,7 @@ int32_t storage_srv(void* p) {
 
     /* Register the storage record */
     furi_record_create(RECORD_STORAGE, storage);
-    FURI_LOG_I(TAG, "Storage service started (sd_mounted=%d)", storage->sd_mounted);
+    FURI_LOG_I(TAG, "Storage service started (sd=%d littlefs=%d)", storage->sd_mounted, storage->littlefs_mounted);
 
     /* Service stays alive forever */
     while(true) {
