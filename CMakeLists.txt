@@ -55,7 +55,7 @@ project(furi_esp32)
 # ST7735S: build Dolphin animation assets into the on-flash LittleFS partition.
 if(FLIPPER_BOARD STREQUAL "esp32s3_st7735")
     find_package(Python3 REQUIRED COMPONENTS Interpreter)
-    set(DOLPHIN_LITTLEFS_DIR "${CMAKE_SOURCE_DIR}/littlefs/dolphin/L1_Tv_128x47")
+    set(DOLPHIN_LITTLEFS_DIR "${CMAKE_SOURCE_DIR}/littlefs/dolphin/LFS_Tv_128x47")
     add_custom_target(generate_dolphin_littlefs_assets
         COMMAND "${Python3_EXECUTABLE}"
             "${CMAKE_SOURCE_DIR}/tools/generate_dolphin_littlefs.py"
