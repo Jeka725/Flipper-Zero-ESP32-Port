@@ -220,7 +220,20 @@ static StorageAnimation*
         StorageAnimation* littlefs_animation =
             animation_storage_find_animation(LITTLEFS_TEST_ANIMATION_NAME);
         if(littlefs_animation) {
-            FURI_LOG_I(TAG, "LittleFS animation selected: %s", LITTLEFS_TEST_ANIMATION_NAME);
+            const BubbleAnimation* probe = animation_storage_get_bubble_animation(littlefs_animation);
+            FURI_LOG_I(
+                TAG,
+                "LittleFS animation selected: %s frames=%u size=%ux%u fps=%u",
+                LITTLEFS_TEST_ANIMATION_NAME,
+                (unsigned)probe->icon_animation.frame_count,
+                (unsigned)probe->icon_animation.width,
+                (unsigned)probe->icon_animation.height,
+                (unsigned)probe->icon_animation.frame_rate);
+            FURI_LOG_I(
+                TAG,
+                "Heap/PSRAM free after animation load: %u/%u",
+                (unsigned)heap_caps_get_free_size(MALLOC_CAP_INTERNAL),
+                (unsigned)heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
             return littlefs_animation;
         }
         FURI_LOG_W(TAG, "LittleFS animation unavailable; using internal animation");
