@@ -25,14 +25,15 @@ typedef struct {
     uint32_t pressed_at;
     uint32_t repeat_at;
     bool long_sent;
+    bool back_on_long;
 } Button;
 
 static Button buttons[] = {
-    {(gpio_num_t)BOARD_PIN_BUTTON_UP, InputKeyUp, false, false, 0, 0, 0, false},
-    {(gpio_num_t)BOARD_PIN_BUTTON_DOWN, InputKeyDown, false, false, 0, 0, 0, false},
-    {(gpio_num_t)BOARD_PIN_BUTTON_LEFT, InputKeyLeft, false, false, 0, 0, 0, false},
-    {(gpio_num_t)BOARD_PIN_BUTTON_RIGHT, InputKeyRight, false, false, 0, 0, 0, false},
-    {(gpio_num_t)BOARD_PIN_BUTTON_OK, InputKeyOk, false, false, 0, 0, 0, false},
+    {(gpio_num_t)BOARD_PIN_BUTTON_UP, InputKeyUp, false, false, 0, 0, 0, false, false},
+    {(gpio_num_t)BOARD_PIN_BUTTON_DOWN, InputKeyDown, false, false, 0, 0, 0, false, false},
+    {(gpio_num_t)BOARD_PIN_BUTTON_LEFT, InputKeyLeft, false, false, 0, 0, 0, false, false},
+    {(gpio_num_t)BOARD_PIN_BUTTON_RIGHT, InputKeyRight, false, false, 0, 0, 0, false, false},
+    {(gpio_num_t)BOARD_PIN_BUTTON_OK, InputKeyOk, false, false, 0, 0, 0, false, false},
 };
 
 static void publish(FuriPubSub* pubsub, InputKey key, InputType type, uint32_t* seq) {
@@ -43,12 +44,6 @@ static void publish(FuriPubSub* pubsub, InputKey key, InputType type, uint32_t* 
         .type = type,
     };
     furi_pubsub_publish(pubsub, &event);
-}
-
-static void publish_short(FuriPubSub* pubsub, InputKey key, uint32_t* seq) {
-    publish(pubsub, key, InputTypePress, seq);
-    publish(pubsub, key, InputTypeShort, seq);
-    publish(pubsub, key, InputTypeRelease, seq);
 }
 
 static bool pressed(const Button* b) {
@@ -68,8 +63,9 @@ void target_input_init(void) {
         buttons[i].raw = pressed(&buttons[i]);
         buttons[i].stable = buttons[i].raw;
         buttons[i].debounce = INPUT_DEBOUNCE_POLLS;
+        buttons[i].back_on_long = false;
     }
-    FURI_LOG_I(TAG, "5-button input: UP=9 DOWN=11 LEFT=12 RIGHT=13 OK=14");
+    FURI_LOG_I(TAG, "5-button input: UP=9 DOWN=11 LEFT=12 RIGHT=13 OK=14; OK hold=2s Back");
 }
 
 void target_input_poll(FuriPubSub* pubsub, uint32_t* sequence_counter) {
@@ -97,17 +93,14 @@ void target_input_poll(FuriPubSub* pubsub, uint32_t* sequence_counter) {
                     b->long_sent = true;
                     b->repeat_at = now;
 
-                    // On this board the center/OK key is also Back/Exit when held for 2 seconds.
                     if(b->key == InputKeyOk) {
-                        publish(pubsub, InputKeyBack, InputTypePress, sequence_counter);
+                        b->back_on_long = true;
                         publish(pubsub, InputKeyBack, InputTypeLong, sequence_counter);
                     } else {
-                        publish(pubsub, b->key, InputTypePress, sequence_counter);
                         publish(pubsub, b->key, InputTypeLong, sequence_counter);
                     }
                 } else if(b->long_sent && now - b->repeat_at >= repeat_ticks) {
                     b->repeat_at = now;
-                    // Do not repeat Back after the 2-second OK hold.
                     if(b->key != InputKeyOk) {
                         publish(pubsub, b->key, InputTypeRepeat, sequence_counter);
                     }
@@ -121,10 +114,18 @@ void target_input_poll(FuriPubSub* pubsub, uint32_t* sequence_counter) {
             b->pressed_at = now;
             b->repeat_at = now;
             b->long_sent = false;
-        } else if(!b->long_sent) {
-            publish_short(pubsub, b->key, sequence_counter);
+            b->back_on_long = false;
+            publish(pubsub, b->key, InputTypePress, sequence_counter);
         } else {
-            publish(pubsub, b->key, InputTypeRelease, sequence_counter);
+            if(b->back_on_long) {
+                publish(pubsub, InputKeyBack, InputTypeRelease, sequence_counter);
+            } else {
+                publish(pubsub, b->key, InputTypeRelease, sequence_counter);
+                if(!b->long_sent) {
+                    publish(pubsub, b->key, InputTypeShort, sequence_counter);
+                }
+            }
+            b->back_on_long = false;
         }
     }
 }
