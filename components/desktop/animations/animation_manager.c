@@ -1,5 +1,6 @@
 #include <view_stack.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <string.h>
 #include <furi.h>
 #include <furi_hal.h>
@@ -128,10 +129,10 @@ static void animation_manager_start_new_idle(AnimationManager* animation_manager
         uint8_t fps = bubble_animation ? bubble_animation->icon_animation.frame_rate : 0;
         bool ok = bubble_animation && loaded && fps;
         if(ok && err == 0) {
-            FURI_LOG_I(TAG, "ANIM: ok=1 loaded=%u fps=%u err=0", loaded, fps);
+            printf("ANIM: ok=1 loaded=%u fps=%u err=0\n", loaded, fps); fflush(stdout);
         } else {
             if(err == 0) err = 6;
-            FURI_LOG_I(TAG, "ANIM: ok=0 loaded=%u fps=%u err=%u", loaded, fps, err);
+            printf("ANIM: ok=0 loaded=%u fps=%u err=%u\n", loaded, fps, err); fflush(stdout);
         }
     }
     animation_manager->state = AnimationManagerStateIdle;
