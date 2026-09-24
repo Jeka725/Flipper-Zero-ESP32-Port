@@ -11,4 +11,5 @@ struct Storage {
     FuriPubSub* pubsub;
     FuriMutex* mutex;
     bool sd_mounted;
+    bool littlefs_mounted;
 };
