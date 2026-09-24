@@ -93,8 +93,14 @@ void target_input_poll(FuriPubSub* pubsub, uint32_t* sequence_counter) {
                     b->long_sent = true;
                     b->repeat_at = now;
 
+                    /*
+                     * ViewDispatcher requires a matching Press before Long.
+                     * A synthetic Back press/long pair makes OK-hold work as
+                     * navigation Back without turning a normal OK press into Back.
+                     */
                     if(b->key == InputKeyOk) {
                         b->back_on_long = true;
+                        publish(pubsub, InputKeyBack, InputTypePress, sequence_counter);
                         publish(pubsub, InputKeyBack, InputTypeLong, sequence_counter);
                     } else {
                         publish(pubsub, b->key, InputTypeLong, sequence_counter);
@@ -120,10 +126,14 @@ void target_input_poll(FuriPubSub* pubsub, uint32_t* sequence_counter) {
             if(b->back_on_long) {
                 publish(pubsub, InputKeyBack, InputTypeRelease, sequence_counter);
             } else {
-                publish(pubsub, b->key, InputTypeRelease, sequence_counter);
+                /*
+                 * Short MUST be sent before Release. ViewDispatcher clears
+                 * ongoing_input on Release and would discard a following Short.
+                 */
                 if(!b->long_sent) {
                     publish(pubsub, b->key, InputTypeShort, sequence_counter);
                 }
+                publish(pubsub, b->key, InputTypeRelease, sequence_counter);
             }
             b->back_on_long = false;
         }
