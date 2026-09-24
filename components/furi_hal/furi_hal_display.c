@@ -250,6 +250,18 @@ void furi_hal_display_init(void) {
     ESP_ERROR_CHECK(esp_lcd_panel_invert_color(panel_handle, BOARD_LCD_INVERT_COLOR));
     ESP_ERROR_CHECK(esp_lcd_panel_swap_xy(panel_handle, BOARD_LCD_SWAP_XY));
     ESP_ERROR_CHECK(esp_lcd_panel_mirror(panel_handle, BOARD_LCD_MIRROR_X, BOARD_LCD_MIRROR_Y));
+
+    /*
+     * The Waveshare ST7735 component starts from its own MADCTL default.
+     * Re-assert the complete register value so no stale MX/MY/MV bit can
+     * survive a generic swap/mirror call. For this board 0x60 is:
+     * MX=1, MY=0, MV=1, RGB=0 -> landscape, not mirrored, RGB order.
+     */
+    {
+        const uint8_t madctl = BOARD_LCD_MADCTL;
+        ESP_ERROR_CHECK(esp_lcd_panel_io_tx_param(io_handle, 0x36 /* MADCTL */, &madctl, 1));
+    }
+
     ESP_ERROR_CHECK(esp_lcd_panel_set_gap(panel_handle, BOARD_LCD_GAP_X, BOARD_LCD_GAP_Y));
 
     /* 4) Belt-and-suspenders: pin down pixel format + normal display mode.
