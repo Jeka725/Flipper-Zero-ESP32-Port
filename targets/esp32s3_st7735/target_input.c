@@ -78,11 +78,11 @@ void target_input_poll(FuriPubSub* pubsub, uint32_t* sequence_counter) {
     const uint32_t long_ticks = furi_ms_to_ticks(INPUT_LONG_PRESS_MS);
     const uint32_t repeat_ticks = furi_ms_to_ticks(INPUT_REPEAT_MS);
 
-    /* LEFT + RIGHT held together for 2 seconds is a dedicated Back shortcut.
+    /* UP + DOWN held together for 2 seconds is a dedicated Back shortcut.
      * Send a normal Back Press/Release pair (not InputTypeLong): Back navigation
      * in Flipper applications is handled by the ordinary Press event. */
-    const bool combo_now = (gpio_get_level((gpio_num_t)BOARD_PIN_BUTTON_LEFT) == 0) &&
-                           (gpio_get_level((gpio_num_t)BOARD_PIN_BUTTON_RIGHT) == 0);
+    const bool combo_now = (gpio_get_level((gpio_num_t)BOARD_PIN_BUTTON_UP) == 0) &&
+                           (gpio_get_level((gpio_num_t)BOARD_PIN_BUTTON_DOWN) == 0);
     if(combo_now && !combo_back_active) {
         combo_back_active = true;
         combo_back_started = now;
@@ -124,8 +124,7 @@ void target_input_poll(FuriPubSub* pubsub, uint32_t* sequence_counter) {
                      * navigation Back without turning a normal OK press into Back.
                      */
                     if(b->key == InputKeyOk) {
-                        b->back_on_long = true;
-                        publish(pubsub, InputKeyBack, InputTypePress, sequence_counter);
+                        publish(pubsub, b->key, InputTypeLong, sequence_counter);
                     } else {
                         publish(pubsub, b->key, InputTypeLong, sequence_counter);
                     }
@@ -147,19 +146,11 @@ void target_input_poll(FuriPubSub* pubsub, uint32_t* sequence_counter) {
             b->back_on_long = false;
             publish(pubsub, b->key, InputTypePress, sequence_counter);
         } else {
-            if(b->back_on_long) {
-                publish(pubsub, InputKeyBack, InputTypeRelease, sequence_counter);
-            } else {
-                /*
-                 * Short MUST be sent before Release. ViewDispatcher clears
-                 * ongoing_input on Release and would discard a following Short.
-                 */
-                if(!b->long_sent) {
-                    publish(pubsub, b->key, InputTypeShort, sequence_counter);
-                }
-                publish(pubsub, b->key, InputTypeRelease, sequence_counter);
+            /* Short MUST be sent before Release. */
+            if(!b->long_sent) {
+                publish(pubsub, b->key, InputTypeShort, sequence_counter);
             }
-            b->back_on_long = false;
+            publish(pubsub, b->key, InputTypeRelease, sequence_counter);
         }
     }
 }
