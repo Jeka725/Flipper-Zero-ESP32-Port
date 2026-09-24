@@ -257,6 +257,52 @@ void furi_hal_display_init(void) {
 
     ESP_ERROR_CHECK(esp_lcd_panel_set_gap(panel_handle, BOARD_LCD_GAP_X, BOARD_LCD_GAP_Y));
 
+    /*
+     * 4) ST7735S manufacturer setup.
+     *
+     * esp_lcd's panel_init() provides the generic controller bring-up, but the
+     * small 128x160 ST7735S modules commonly need the panel-specific power,
+     * frame-rate and gamma registers as well. Without these, a panel can accept
+     * the first RAM write and then become unstable/blank after the GUI starts.
+     * This is the standard ST7735S 16-bit setup used by several reference
+     * drivers for 128x160 panels.
+     */
+    {
+        const uint8_t frmctr1[] = {0x00, 0x06, 0x03};
+        const uint8_t frmctr2[] = {0x00, 0x06, 0x03};
+        const uint8_t frmctr3[] = {0x00, 0x06, 0x03, 0x00, 0x06, 0x03};
+        const uint8_t pwctr1[] = {0x02, 0x70};
+        const uint8_t pwctr2[] = {0x05};
+        const uint8_t pwctr3[] = {0x01, 0x02};
+        const uint8_t pwctr4[] = {0x01, 0x02};
+        const uint8_t pwctr5[] = {0x01, 0x02};
+        const uint8_t vmctr1[] = {0x3C, 0x38};
+        const uint8_t gamma_pos[] = {
+            0x02, 0x1C, 0x07, 0x12, 0x37, 0x32, 0x29, 0x2C,
+            0x29, 0x25, 0x2B, 0x39, 0x00, 0x01, 0x03, 0x10};
+        const uint8_t gamma_neg[] = {
+            0x03, 0x1D, 0x07, 0x06, 0x2E, 0x2C, 0x29, 0x2C,
+            0x2E, 0x2E, 0x37, 0x3F, 0x00, 0x00, 0x02, 0x10};
+
+        ESP_ERROR_CHECK(esp_lcd_panel_io_tx_param(io_handle, 0x11 /* SLPOUT */, NULL, 0));
+        vTaskDelay(pdMS_TO_TICKS(120));
+        ESP_ERROR_CHECK(esp_lcd_panel_io_tx_param(io_handle, 0xB1 /* FRMCTR1 */, frmctr1, sizeof(frmctr1)));
+        ESP_ERROR_CHECK(esp_lcd_panel_io_tx_param(io_handle, 0xB2 /* FRMCTR2 */, frmctr2, sizeof(frmctr2)));
+        ESP_ERROR_CHECK(esp_lcd_panel_io_tx_param(io_handle, 0xB3 /* FRMCTR3 */, frmctr3, sizeof(frmctr3)));
+        ESP_ERROR_CHECK(esp_lcd_panel_io_tx_param(io_handle, 0xB4 /* INVCTR */, (uint8_t[]){0x03}, 1));
+        ESP_ERROR_CHECK(esp_lcd_panel_io_tx_param(io_handle, 0xC0 /* PWCTR1 */, pwctr1, sizeof(pwctr1)));
+        ESP_ERROR_CHECK(esp_lcd_panel_io_tx_param(io_handle, 0xC1 /* PWCTR2 */, pwctr2, sizeof(pwctr2)));
+        ESP_ERROR_CHECK(esp_lcd_panel_io_tx_param(io_handle, 0xC2 /* PWCTR3 */, pwctr3, sizeof(pwctr3)));
+        ESP_ERROR_CHECK(esp_lcd_panel_io_tx_param(io_handle, 0xC3 /* PWCTR4 */, pwctr4, sizeof(pwctr4)));
+        ESP_ERROR_CHECK(esp_lcd_panel_io_tx_param(io_handle, 0xC4 /* PWCTR5 */, pwctr5, sizeof(pwctr5)));
+        ESP_ERROR_CHECK(esp_lcd_panel_io_tx_param(io_handle, 0xC5 /* VMCTR1 */, vmctr1, sizeof(vmctr1)));
+        ESP_ERROR_CHECK(esp_lcd_panel_io_tx_param(io_handle, 0x20 /* INVOFF */, NULL, 0));
+        ESP_ERROR_CHECK(esp_lcd_panel_io_tx_param(io_handle, 0x26 /* GAMSET */, (uint8_t[]){0x08}, 1));
+        ESP_ERROR_CHECK(esp_lcd_panel_io_tx_param(io_handle, 0xE0 /* GMCTRP1 */, gamma_pos, sizeof(gamma_pos)));
+        ESP_ERROR_CHECK(esp_lcd_panel_io_tx_param(io_handle, 0xE1 /* GMCTRN1 */, gamma_neg, sizeof(gamma_neg)));
+        ESP_ERROR_CHECK(esp_lcd_panel_io_tx_param(io_handle, 0x38 /* IDMOFF */, NULL, 0));
+    }
+
     /* 4) Belt-and-suspenders: pin down pixel format + normal display mode.
      *    ST7735S RGB565 uses COLMOD 0x05 (RGB565) — matches bits_per_pixel=16 above;
      *    NORON (0x13) = normal display mode (not partial/idle). Both are no-ops
@@ -267,8 +313,9 @@ void furi_hal_display_init(void) {
     }
     ESP_ERROR_CHECK(esp_lcd_panel_io_tx_param(io_handle, 0x13 /* NORON */, NULL, 0));
 
-    /* Turn on display */
+    /* Turn on display and force the physical backlight on before any GUI task starts. */
     ESP_ERROR_CHECK(esp_lcd_panel_disp_on_off(panel_handle, true));
+    furi_hal_light_set(LightBacklight, UINT8_MAX);
 
     fg_color = BOARD_LCD_FG_COLOR;
     bg_color = BOARD_LCD_BG_COLOR;
