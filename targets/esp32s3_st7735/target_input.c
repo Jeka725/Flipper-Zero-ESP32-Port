@@ -2,7 +2,7 @@
  * @file target_input.c
  * Five-button input driver for ESP32-S3 N16R8 ST7735S board.
  *
- * Exact logical mapping: OK=GPIO14, RIGHT=GPIO13, LEFT=GPIO12,
+ * Exact physical mapping: SELECT=GPIO14, RIGHT=GPIO13, LEFT=GPIO12,
  * UP=GPIO11, DOWN=GPIO9.
  * All buttons are active-low and use the ESP32 internal pull-ups.
  */
@@ -70,7 +70,7 @@ void target_input_init(void) {
         buttons[i].debounce = INPUT_DEBOUNCE_POLLS;
         buttons[i].back_on_long = false;
     }
-    FURI_LOG_I(TAG, "5-button input: OK=14 RIGHT=13 LEFT=12 UP=11 DOWN=9; UP+DOWN hold=2s Back");
+    FURI_LOG_I(TAG, "5-button input: SELECT=14 RIGHT=13 LEFT=12 UP=11 DOWN=9; UP+DOWN hold=2s Back");
 }
 
 void target_input_poll(FuriPubSub* pubsub, uint32_t* sequence_counter) {
