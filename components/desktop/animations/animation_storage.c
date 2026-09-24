@@ -44,7 +44,7 @@ static bool animation_storage_load_single_manifest_info(
 
     do {
         uint32_t u32value;
-        FURI_LOG_I(TAG, "LittleFS manifest lookup: %s", ANIMATION_MANIFEST_FILE);
+        
         if(!storage_common_exists(storage, ANIMATION_MANIFEST_FILE)) {
             animation_storage_last_error = 2;
             break;
@@ -156,7 +156,7 @@ void animation_storage_fill_animation_list(StorageAnimationList_t* animation_lis
             storage_animation->manifest_info.weight = u32value;
 
             StorageAnimationList_push_back(*animation_list, storage_animation);
-            FURI_LOG_I(TAG, "Manifest animation found: %s", storage_animation->manifest_info.name);
+            
         } while(1);
 
         animation_storage_free_storage_animation(&storage_animation);
@@ -169,7 +169,7 @@ void animation_storage_fill_animation_list(StorageAnimationList_t* animation_lis
     for(size_t i = 0; i < dolphin_internal_size; ++i) {
         StorageAnimationList_push_back(*animation_list, (StorageAnimation*)&dolphin_internal[i]);
     }
-    FURI_LOG_I(TAG, "Animation list complete: %u total entries", (unsigned)StorageAnimationList_size(*animation_list));
+    
 
     furi_record_close(RECORD_STORAGE);
 }
@@ -338,7 +338,7 @@ static bool animation_storage_load_frames(
         frames_ok = false;
         furi_string_printf(filename, ANIMATION_DIR "/%s/frame_%d.bm", name, i);
 
-        FURI_LOG_I(TAG, "LittleFS frame stat: %s", furi_string_get_cstr(filename));
+        
         if(storage_common_stat(storage, furi_string_get_cstr(filename), &file_info) != FSE_OK) {
             animation_storage_last_error = 4;
             break;
@@ -363,19 +363,12 @@ static bool animation_storage_load_frames(
             break;
         }
         storage_file_close(file);
-        FURI_LOG_I(TAG, "Loaded frame %d/%u into PSRAM: %s (%llu bytes)",
-                    i + 1, icon->frame_count, furi_string_get_cstr(filename), file_info.size);
+        
         frames_ok = true;
     }
 
     if(!frames_ok) {
-        FURI_LOG_E(
-            TAG,
-            "Load \'%s\' failed, %ux%u, size: %llu",
-            furi_string_get_cstr(filename),
-            width,
-            height,
-            file_info.size);
+        
         animation_storage_free_frames(animation);
     } else {
         furi_check(animation->icon_animation.frames);
@@ -460,7 +453,7 @@ static bool animation_storage_load_bubbles(BubbleAnimation* animation, FlipperFo
 
     if(!success) {
         if(animation->frame_bubble_sequences) {
-            FURI_LOG_E(TAG, "Failed to load animation bubbles");
+            
             animation_storage_free_bubbles(animation);
         }
     }
@@ -490,7 +483,7 @@ static BubbleAnimation* animation_storage_load_animation(const char* name) {
 
 
         furi_string_printf(str, ANIMATION_DIR "/%s/" ANIMATION_META_FILE, name);
-        FURI_LOG_I(TAG, "LittleFS meta lookup: %s", furi_string_get_cstr(str));
+        
         if(!storage_common_exists(storage, furi_string_get_cstr(str))) {
             animation_storage_last_error = 3;
             break;
@@ -520,7 +513,7 @@ static BubbleAnimation* animation_storage_load_animation(const char* name) {
         uint32_t count = 0;
         if(!flipper_format_get_value_count(ff, "Frames order", &count)) break;
         if(count != frames) {
-            FURI_LOG_E(TAG, "Error loading animation: frames order");
+            
             break;
         }
         u32array = malloc(sizeof(uint32_t) * frames);
