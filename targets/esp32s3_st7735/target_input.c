@@ -78,20 +78,24 @@ void target_input_poll(FuriPubSub* pubsub, uint32_t* sequence_counter) {
     const uint32_t long_ticks = furi_ms_to_ticks(INPUT_LONG_PRESS_MS);
     const uint32_t repeat_ticks = furi_ms_to_ticks(INPUT_REPEAT_MS);
 
-    /* GPIO9 + GPIO11 is the dedicated two-button Back shortcut. */
-    const bool combo_now = (gpio_get_level((gpio_num_t)BOARD_PIN_BUTTON_UP) == 0) &&
-                           (gpio_get_level((gpio_num_t)BOARD_PIN_BUTTON_DOWN) == 0);
+    /* LEFT + RIGHT held together for 2 seconds is a dedicated Back shortcut.
+     * Send a normal Back Press/Release pair (not InputTypeLong): Back navigation
+     * in Flipper applications is handled by the ordinary Press event. */
+    const bool combo_now = (gpio_get_level((gpio_num_t)BOARD_PIN_BUTTON_LEFT) == 0) &&
+                           (gpio_get_level((gpio_num_t)BOARD_PIN_BUTTON_RIGHT) == 0);
     if(combo_now && !combo_back_active) {
         combo_back_active = true;
         combo_back_started = now;
         combo_back_sent = false;
     } else if(!combo_now) {
+        if(combo_back_sent) {
+            publish(pubsub, InputKeyBack, InputTypeRelease, sequence_counter);
+        }
         combo_back_active = false;
         combo_back_sent = false;
     } else if(!combo_back_sent && now - combo_back_started >= long_ticks) {
         combo_back_sent = true;
         publish(pubsub, InputKeyBack, InputTypePress, sequence_counter);
-        publish(pubsub, InputKeyBack, InputTypeLong, sequence_counter);
     }
 
     for(size_t i = 0; i < sizeof(buttons) / sizeof(buttons[0]); i++) {
@@ -122,7 +126,6 @@ void target_input_poll(FuriPubSub* pubsub, uint32_t* sequence_counter) {
                     if(b->key == InputKeyOk) {
                         b->back_on_long = true;
                         publish(pubsub, InputKeyBack, InputTypePress, sequence_counter);
-                        publish(pubsub, InputKeyBack, InputTypeLong, sequence_counter);
                     } else {
                         publish(pubsub, b->key, InputTypeLong, sequence_counter);
                     }
