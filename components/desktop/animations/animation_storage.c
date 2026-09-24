@@ -37,7 +37,15 @@ static bool animation_storage_load_single_manifest_info(
 
     do {
         uint32_t u32value;
-        if(!flipper_format_file_open_existing(file, ANIMATION_MANIFEST_FILE)) break;
+        FURI_LOG_I(TAG, "LittleFS manifest lookup: %s", ANIMATION_MANIFEST_FILE);
+        if(!storage_common_exists(storage, ANIMATION_MANIFEST_FILE)) {
+            FURI_LOG_E(TAG, "LittleFS manifest missing: %s", ANIMATION_MANIFEST_FILE);
+            break;
+        }
+        if(!flipper_format_file_open_existing(file, ANIMATION_MANIFEST_FILE)) {
+            FURI_LOG_E(TAG, "LittleFS manifest open failed: %s", ANIMATION_MANIFEST_FILE);
+            break;
+        }
 
         if(!flipper_format_read_header(file, read_string, &u32value)) break;
         if(furi_string_cmp_str(read_string, "Flipper Animation Manifest")) break;
@@ -297,8 +305,11 @@ static bool animation_storage_load_frames(
         frames_ok = false;
         furi_string_printf(filename, ANIMATION_DIR "/%s/frame_%d.bm", name, i);
 
-        if(storage_common_stat(storage, furi_string_get_cstr(filename), &file_info) != FSE_OK)
+        FURI_LOG_I(TAG, "LittleFS frame stat: %s", furi_string_get_cstr(filename));
+        if(storage_common_stat(storage, furi_string_get_cstr(filename), &file_info) != FSE_OK) {
+            FURI_LOG_E(TAG, "LittleFS frame missing: %s", furi_string_get_cstr(filename));
             break;
+        }
         if(file_info.size > max_filesize) {
             FURI_LOG_E(
                 TAG,
