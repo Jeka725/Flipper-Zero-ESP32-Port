@@ -134,16 +134,29 @@ void input_callback(const void* value, void* /*ctx*/) {
     if(e->type == InputTypeShort &&
        (e->key == InputKeyUp || e->key == InputKeyDown ||
         e->key == InputKeyLeft || e->key == InputKeyRight)) {
-        bool ccw = (e->key == InputKeyUp) || (e->key == InputKeyLeft);
-        bool ingame = wolf3d_is_ingame();
+        /* Direct D-pad mapping: physical direction stays the same in-game
+         * and in menus. No axis inversion or rotation-dependent remapping. */
         int sc_code;
         FuriTimer* t;
-        if(ingame) {
-            sc_code = ccw ? sc::LeftArrow : sc::RightArrow;
-            t       = ccw ? s_release_left : s_release_right;
-        } else {
-            sc_code = ccw ? sc::UpArrow   : sc::DownArrow;
-            t       = ccw ? s_release_left : s_release_right;
+        switch(e->key) {
+        case InputKeyUp:
+            sc_code = sc::UpArrow;
+            t = s_release_left;
+            break;
+        case InputKeyDown:
+            sc_code = sc::DownArrow;
+            t = s_release_right;
+            break;
+        case InputKeyLeft:
+            sc_code = sc::LeftArrow;
+            t = s_release_left;
+            break;
+        case InputKeyRight:
+            sc_code = sc::RightArrow;
+            t = s_release_right;
+            break;
+        default:
+            return;
         }
         push_key_event(SDL_KEYDOWN, sc_code);
         furi_timer_start(t, pdMS_TO_TICKS(130));
