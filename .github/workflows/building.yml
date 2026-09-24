@@ -88,7 +88,7 @@ jobs:
             0x0 "$BUILD/bootloader/bootloader.bin" \
             0x8000 "$BUILD/partition_table/partition-table.bin" \
             0x10000 "$BUILD/furi_esp32.bin" \
-            0xC00000 "$BUILD/littlefs.bin"
+            0xC20000 "$BUILD/littlefs.bin"
 
           echo "=== LittleFS ==="\n          ls -lh "$BUILD/littlefs.bin"\n\n          echo "=== Firmware ==="
           ls -lh "$STAGE/${BOARD}.bin"
