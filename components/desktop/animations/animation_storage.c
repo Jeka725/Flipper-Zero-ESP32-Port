@@ -14,6 +14,13 @@
 
 #define TAG "AnimationStorage"
 
+static uint8_t animation_storage_last_error;
+
+uint8_t animation_storage_get_last_error(void) {
+    return animation_storage_last_error;
+}
+
+
 #define ANIMATION_META_FILE     "meta.txt"
 #define ANIMATION_DIR           EXT_PATH("dolphin")
 #define ANIMATION_MANIFEST_FILE ANIMATION_DIR "/manifest.txt"
@@ -39,16 +46,22 @@ static bool animation_storage_load_single_manifest_info(
         uint32_t u32value;
         FURI_LOG_I(TAG, "LittleFS manifest lookup: %s", ANIMATION_MANIFEST_FILE);
         if(!storage_common_exists(storage, ANIMATION_MANIFEST_FILE)) {
-            FURI_LOG_E(TAG, "LittleFS manifest missing: %s", ANIMATION_MANIFEST_FILE);
+            animation_storage_last_error = 2;
             break;
         }
         if(!flipper_format_file_open_existing(file, ANIMATION_MANIFEST_FILE)) {
-            FURI_LOG_E(TAG, "LittleFS manifest open failed: %s", ANIMATION_MANIFEST_FILE);
+            animation_storage_last_error = 2;
             break;
         }
 
-        if(!flipper_format_read_header(file, read_string, &u32value)) break;
-        if(furi_string_cmp_str(read_string, "Flipper Animation Manifest")) break;
+        if(!flipper_format_read_header(file, read_string, &u32value)) {
+            animation_storage_last_error = 2;
+            break;
+        }
+        if(furi_string_cmp_str(read_string, "Flipper Animation Manifest")) {
+            animation_storage_last_error = 2;
+            break;
+        }
 
         manifest_info->name = NULL;
 
@@ -57,20 +70,38 @@ static bool animation_storage_load_single_manifest_info(
         while(flipper_format_read_string(file, "Name", read_string) &&
               furi_string_cmp_str(read_string, name))
             ;
-        if(furi_string_cmp_str(read_string, name)) break;
+        if(furi_string_cmp_str(read_string, name)) {
+            animation_storage_last_error = 2;
+            break;
+        }
         flipper_format_set_strict_mode(file, true);
 
         manifest_info->name = strdup(furi_string_get_cstr(read_string));
 
-        if(!flipper_format_read_uint32(file, "Min butthurt", &u32value, 1)) break;
+        if(!flipper_format_read_uint32(file, "Min butthurt", &u32value, 1)) {
+            animation_storage_last_error = 2;
+            break;
+        }
         manifest_info->min_butthurt = u32value;
-        if(!flipper_format_read_uint32(file, "Max butthurt", &u32value, 1)) break;
+        if(!flipper_format_read_uint32(file, "Max butthurt", &u32value, 1)) {
+            animation_storage_last_error = 2;
+            break;
+        }
         manifest_info->max_butthurt = u32value;
-        if(!flipper_format_read_uint32(file, "Min level", &u32value, 1)) break;
+        if(!flipper_format_read_uint32(file, "Min level", &u32value, 1)) {
+            animation_storage_last_error = 2;
+            break;
+        }
         manifest_info->min_level = u32value;
-        if(!flipper_format_read_uint32(file, "Max level", &u32value, 1)) break;
+        if(!flipper_format_read_uint32(file, "Max level", &u32value, 1)) {
+            animation_storage_last_error = 2;
+            break;
+        }
         manifest_info->max_level = u32value;
-        if(!flipper_format_read_uint32(file, "Weight", &u32value, 1)) break;
+        if(!flipper_format_read_uint32(file, "Weight", &u32value, 1)) {
+            animation_storage_last_error = 2;
+            break;
+        }
         manifest_info->weight = u32value;
         result = true;
     } while(0);
@@ -145,6 +176,7 @@ void animation_storage_fill_animation_list(StorageAnimationList_t* animation_lis
 
 StorageAnimation* animation_storage_find_animation(const char* name) {
     furi_assert(name);
+    animation_storage_last_error = 0;
     furi_assert(strlen(name));
     StorageAnimation* storage_animation = NULL;
 
@@ -181,6 +213,7 @@ StorageAnimation* animation_storage_find_animation(const char* name) {
         }
     }
 
+    if(storage_animation && storage_animation->external) animation_storage_last_error = 0;
     return storage_animation;
 }
 
@@ -307,33 +340,26 @@ static bool animation_storage_load_frames(
 
         FURI_LOG_I(TAG, "LittleFS frame stat: %s", furi_string_get_cstr(filename));
         if(storage_common_stat(storage, furi_string_get_cstr(filename), &file_info) != FSE_OK) {
-            FURI_LOG_E(TAG, "LittleFS frame missing: %s", furi_string_get_cstr(filename));
+            animation_storage_last_error = 4;
             break;
         }
         if(file_info.size > max_filesize) {
-            FURI_LOG_E(
-                TAG,
-                "Filesize %llu, max: %zu (width %u, height %u)",
-                file_info.size,
-                max_filesize,
-                width,
-                height);
+            animation_storage_last_error = 4;
             break;
         }
         if(!storage_file_open(
                file, furi_string_get_cstr(filename), FSAM_READ, FSOM_OPEN_EXISTING)) {
-            FURI_LOG_E(TAG, "Can't open file \'%s\'", furi_string_get_cstr(filename));
+            animation_storage_last_error = 4;
             break;
         }
 
         FURI_CONST_ASSIGN_PTR(icon->frames[i], heap_caps_malloc(file_info.size, MALLOC_CAP_SPIRAM));
         if(!icon->frames[i]) {
-            FURI_LOG_E(TAG, "PSRAM allocation failed for %s (%llu bytes)",
-                       furi_string_get_cstr(filename), file_info.size);
+            animation_storage_last_error = 5;
             break;
         }
         if(storage_file_read(file, (void*)icon->frames[i], file_info.size) != file_info.size) {
-            FURI_LOG_E(TAG, "Read failed: \'%s\'", furi_string_get_cstr(filename));
+            animation_storage_last_error = 4;
             break;
         }
         storage_file_close(file);
@@ -466,15 +492,21 @@ static BubbleAnimation* animation_storage_load_animation(const char* name) {
         furi_string_printf(str, ANIMATION_DIR "/%s/" ANIMATION_META_FILE, name);
         FURI_LOG_I(TAG, "LittleFS meta lookup: %s", furi_string_get_cstr(str));
         if(!storage_common_exists(storage, furi_string_get_cstr(str))) {
-            FURI_LOG_E(TAG, "LittleFS meta missing: %s", furi_string_get_cstr(str));
+            animation_storage_last_error = 3;
             break;
         }
         if(!flipper_format_file_open_existing(ff, furi_string_get_cstr(str))) {
-            FURI_LOG_E(TAG, "LittleFS meta open failed: %s", furi_string_get_cstr(str));
+            animation_storage_last_error = 3;
             break;
         }
-        if(!flipper_format_read_header(ff, str, &u32value)) break;
-        if(furi_string_cmp_str(str, "Flipper Animation")) break;
+        if(!flipper_format_read_header(ff, str, &u32value)) {
+            animation_storage_last_error = 3;
+            break;
+        }
+        if(furi_string_cmp_str(str, "Flipper Animation")) {
+            animation_storage_last_error = 3;
+            break;
+        }
 
         if(!flipper_format_read_uint32(ff, "Width", &width, 1)) break;
         if(!flipper_format_read_uint32(ff, "Height", &height, 1)) break;
@@ -499,8 +531,10 @@ static BubbleAnimation* animation_storage_load_animation(const char* name) {
         }
 
         /* passive and active frames must be loaded up to this point */
-        if(!animation_storage_load_frames(storage, name, animation, u32array, width, height))
+        if(!animation_storage_load_frames(storage, name, animation, u32array, width, height)) {
+            if(animation_storage_last_error == 0) animation_storage_last_error = 4;
             break;
+        }
 
         if(!flipper_format_read_uint32(ff, "Active cycles", &u32value, 1)) break; //-V779
         animation->active_cycles = u32value;
