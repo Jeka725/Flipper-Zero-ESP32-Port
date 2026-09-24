@@ -107,7 +107,6 @@ void target_input_poll(FuriPubSub* pubsub, uint32_t* sequence_counter) {
                 buttons[j].stable = false;
                 buttons[j].debounce = INPUT_DEBOUNCE_POLLS;
                 buttons[j].long_sent = false;
-                buttons[j].back_on_long = false;
             }
         }
         combo_back_active = false;
