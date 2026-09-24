@@ -134,6 +134,9 @@ void target_input_poll(FuriPubSub* pubsub, uint32_t* sequence_counter) {
         }
         if(b->stable == b->raw) {
             if(b->stable) {
+                if(combo_back_active && (b->key == InputKeyUp || b->key == InputKeyDown)) {
+                    continue;
+                }
                 const uint32_t held = now - b->pressed_at;
                 if(!b->long_sent && held >= long_ticks) {
                     b->long_sent = true;
@@ -157,6 +160,10 @@ void target_input_poll(FuriPubSub* pubsub, uint32_t* sequence_counter) {
             b->long_sent = false;
             publish(pubsub, b->key, InputTypePress, sequence_counter);
         } else {
+            if(combo_back_active && (b->key == InputKeyUp || b->key == InputKeyDown)) {
+                b->stable = b->raw;
+                continue;
+            }
             /* Short MUST be sent before Release. */
             if(!b->long_sent) {
                 publish(pubsub, b->key, InputTypeShort, sequence_counter);
