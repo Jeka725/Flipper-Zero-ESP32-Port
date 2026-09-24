@@ -36,7 +36,7 @@
 #define BOARD_PIN_LCD_BL         4
 
 /* Native ST7735S is 128x160. Swap X/Y only to use the display in the
- * requested 160x128 landscape orientation. No X/Y mirroring is applied. */
+ * requested 160x128 landscape orientation. Use one axis mirror with XY swap for a true 180-degree landscape rotation. */
 #define BOARD_LCD_H_RES          160
 #define BOARD_LCD_V_RES          128
 #define BOARD_LCD_SPI_HOST       SPI2_HOST
@@ -44,7 +44,7 @@
 #define BOARD_LCD_CMD_BITS       8
 #define BOARD_LCD_PARAM_BITS    8
 #define BOARD_LCD_SWAP_XY        true
-#define BOARD_LCD_MIRROR_X       true
+#define BOARD_LCD_MIRROR_X       false
 #define BOARD_LCD_MIRROR_Y       true
 #define BOARD_LCD_INVERT_COLOR   false
 #define BOARD_LCD_GAP_X          0
