@@ -317,6 +317,7 @@ static bool animation_storage_load_frames(
     }
 
     if((max_frame_count >= frame_order_count) || (max_frame_count >= 256 /* max uint8_t */)) {
+        animation_storage_last_error = 4;
         return false;
     }
 
@@ -326,6 +327,10 @@ static bool animation_storage_load_frames(
     FURI_CONST_ASSIGN(icon->height, height);
     FURI_CONST_ASSIGN(icon->width, width);
     icon->frames = malloc(sizeof(const uint8_t*) * icon->frame_count);
+    if(!icon->frames) {
+        animation_storage_last_error = 5;
+        return false;
+    }
 
     bool frames_ok = false;
     File* file = storage_file_alloc(storage);
@@ -501,23 +506,23 @@ static BubbleAnimation* animation_storage_load_animation(const char* name) {
             break;
         }
 
-        if(!flipper_format_read_uint32(ff, "Width", &width, 1)) break;
-        if(!flipper_format_read_uint32(ff, "Height", &height, 1)) break;
+        if(!flipper_format_read_uint32(ff, "Width", &width, 1)) { animation_storage_last_error = 3; break; }
+        if(!flipper_format_read_uint32(ff, "Height", &height, 1)) { animation_storage_last_error = 3; break; }
 
-        if(!flipper_format_read_uint32(ff, "Passive frames", &u32value, 1)) break;
+        if(!flipper_format_read_uint32(ff, "Passive frames", &u32value, 1)) { animation_storage_last_error = 3; break; }
         animation->passive_frames = u32value;
-        if(!flipper_format_read_uint32(ff, "Active frames", &u32value, 1)) break;
+        if(!flipper_format_read_uint32(ff, "Active frames", &u32value, 1)) { animation_storage_last_error = 3; break; }
         animation->active_frames = u32value;
 
         uint8_t frames = animation->passive_frames + animation->active_frames;
         uint32_t count = 0;
-        if(!flipper_format_get_value_count(ff, "Frames order", &count)) break;
+        if(!flipper_format_get_value_count(ff, "Frames order", &count)) { animation_storage_last_error = 3; break; }
         if(count != frames) {
-            
+            animation_storage_last_error = 3;
             break;
         }
         u32array = malloc(sizeof(uint32_t) * frames);
-        if(!flipper_format_read_uint32(ff, "Frames order", u32array, frames)) break;
+        if(!flipper_format_read_uint32(ff, "Frames order", u32array, frames)) { animation_storage_last_error = 3; break; }
         animation->frame_order = malloc(sizeof(uint8_t) * frames);
         for(int i = 0; i < frames; ++i) {
             FURI_CONST_ASSIGN(animation->frame_order[i], u32array[i]);
@@ -529,16 +534,16 @@ static BubbleAnimation* animation_storage_load_animation(const char* name) {
             break;
         }
 
-        if(!flipper_format_read_uint32(ff, "Active cycles", &u32value, 1)) break; //-V779
+        if(!flipper_format_read_uint32(ff, "Active cycles", &u32value, 1)) { animation_storage_last_error = 3; break; } //-V779
         animation->active_cycles = u32value;
-        if(!flipper_format_read_uint32(ff, "Frame rate", &u32value, 1)) break;
+        if(!flipper_format_read_uint32(ff, "Frame rate", &u32value, 1)) { animation_storage_last_error = 3; break; }
         FURI_CONST_ASSIGN(animation->icon_animation.frame_rate, u32value);
-        if(!flipper_format_read_uint32(ff, "Duration", &u32value, 1)) break;
+        if(!flipper_format_read_uint32(ff, "Duration", &u32value, 1)) { animation_storage_last_error = 3; break; }
         animation->duration = u32value;
-        if(!flipper_format_read_uint32(ff, "Active cooldown", &u32value, 1)) break;
+        if(!flipper_format_read_uint32(ff, "Active cooldown", &u32value, 1)) { animation_storage_last_error = 3; break; }
         animation->active_cooldown = u32value;
 
-        if(!animation_storage_load_bubbles(animation, ff)) break;
+        if(!animation_storage_load_bubbles(animation, ff)) { animation_storage_last_error = 3; break; }
         success = true;
     } while(0);
 
