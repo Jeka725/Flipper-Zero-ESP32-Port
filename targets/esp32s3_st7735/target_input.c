@@ -142,12 +142,10 @@ void target_input_poll(FuriPubSub* pubsub, uint32_t* sequence_counter) {
                     b->long_sent = true;
                     b->repeat_at = now;
 
-                    publish(pubsub, b->key, InputTypeLong, sequence_counter);
-                } else if(b->long_sent && now - b->repeat_at >= repeat_ticks) {
-                    b->repeat_at = now;
-                    if(b->key != InputKeyOk) {
-                        publish(pubsub, b->key, InputTypeRepeat, sequence_counter);
-                    }
+                    /* Holding ANY physical button for 2 seconds enters Back.
+                     * Suppress the original long/repeat action so a held
+                     * navigation key cannot continue operating the current view. */
+                    publish(pubsub, InputKeyBack, InputTypePress, sequence_counter);
                 }
             }
             continue;
@@ -164,11 +162,14 @@ void target_input_poll(FuriPubSub* pubsub, uint32_t* sequence_counter) {
                 b->stable = b->raw;
                 continue;
             }
-            /* Short MUST be sent before Release. */
-            if(!b->long_sent) {
+            /* A long-held key becomes Back; do not also emit a short key. */
+            if(b->long_sent) {
+                publish(pubsub, InputKeyBack, InputTypeRelease, sequence_counter);
+            } else {
+                /* Short MUST be sent before Release. */
                 publish(pubsub, b->key, InputTypeShort, sequence_counter);
+                publish(pubsub, b->key, InputTypeRelease, sequence_counter);
             }
-            publish(pubsub, b->key, InputTypeRelease, sequence_counter);
         }
     }
 }
