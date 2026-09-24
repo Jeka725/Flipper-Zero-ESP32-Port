@@ -5,6 +5,7 @@
 #include <core/dangerous_defines.h>
 #include <storage/storage.h>
 #include <gui/icon_i.h>
+#include <esp_heap_caps.h>
 
 #include "animation_manager.h"
 #include "animation_storage.h"
@@ -314,12 +315,19 @@ static bool animation_storage_load_frames(
             break;
         }
 
-        FURI_CONST_ASSIGN_PTR(icon->frames[i], malloc(file_info.size));
+        FURI_CONST_ASSIGN_PTR(icon->frames[i], heap_caps_malloc(file_info.size, MALLOC_CAP_SPIRAM));
+        if(!icon->frames[i]) {
+            FURI_LOG_E(TAG, "PSRAM allocation failed for %s (%llu bytes)",
+                       furi_string_get_cstr(filename), file_info.size);
+            break;
+        }
         if(storage_file_read(file, (void*)icon->frames[i], file_info.size) != file_info.size) {
             FURI_LOG_E(TAG, "Read failed: \'%s\'", furi_string_get_cstr(filename));
             break;
         }
         storage_file_close(file);
+        FURI_LOG_I(TAG, "Loaded frame %d/%u into PSRAM: %s (%llu bytes)",
+                    i + 1, icon->frame_count, furi_string_get_cstr(filename), file_info.size);
         frames_ok = true;
     }
 
