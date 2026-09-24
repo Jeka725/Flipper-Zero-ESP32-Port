@@ -4,7 +4,7 @@
  *
  * Fixed hardware configuration:
  *   LCD SCK=GPIO5, MOSI=GPIO6, DC=GPIO7, RST=GPIO15, CS=GPIO16, BL=GPIO4
- *   Buttons UP=GPIO9, DOWN=GPIO11, LEFT=GPIO12, RIGHT=GPIO13, OK=GPIO14
+ *   Buttons UP=GPIO11, DOWN=GPIO9, LEFT=GPIO12, RIGHT=GPIO13, OK=GPIO14
  *
  * The board has Wi-Fi and BLE only. No SD/CC1101/NRF24/NFC/RFID/IR/touch/
  * vibro/speaker hardware is present.
@@ -35,8 +35,9 @@
 #define BOARD_PIN_LCD_RST       15
 #define BOARD_PIN_LCD_BL         4
 
-/* Native ST7735S is 128x160. Swap X/Y only to use the display in the
- * requested 160x128 landscape orientation. Use one axis mirror with XY swap for a true 180-degree landscape rotation. */
+/* Native ST7735S is 128x160. Use the ST7735 MADCTL landscape mode that
+ * matches the physical mounting of this module: MV+MX (0x60, RGB).
+ * Do NOT use MY here: MY+MV (0xA0) is the mirrored/opposite landscape mode. */
 #define BOARD_LCD_H_RES          160
 #define BOARD_LCD_V_RES          128
 #define BOARD_LCD_SPI_HOST       SPI2_HOST
@@ -44,8 +45,9 @@
 #define BOARD_LCD_CMD_BITS       8
 #define BOARD_LCD_PARAM_BITS    8
 #define BOARD_LCD_SWAP_XY        true
-#define BOARD_LCD_MIRROR_X       false
-#define BOARD_LCD_MIRROR_Y       true
+#define BOARD_LCD_MIRROR_X       true
+#define BOARD_LCD_MIRROR_Y       false
+#define BOARD_LCD_MADCTL          0x60
 #define BOARD_LCD_INVERT_COLOR   false
 #define BOARD_LCD_GAP_X          0
 #define BOARD_LCD_GAP_Y          0
