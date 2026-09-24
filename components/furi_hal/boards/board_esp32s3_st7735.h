@@ -35,9 +35,8 @@
 #define BOARD_PIN_LCD_RST       15
 #define BOARD_PIN_LCD_BL         4
 
-/* Native ST7735S is 128x160. Use MV+MX (0x60) for the required
- * landscape orientation with the image rotated 180° relative to the
- * previous 0xA0 orientation. */
+/* Native ST7735S is 128x160. Use MV+MY (0xA0) for the required landscape orientation without
+ * the horizontal mirroring seen with the previous MV+MX (0x60) setting. */
 
 #define BOARD_LCD_H_RES          160
 #define BOARD_LCD_V_RES          128
