@@ -113,7 +113,7 @@ void target_input_poll(FuriPubSub* pubsub, uint32_t* sequence_counter) {
         combo_back_sent = false;
     } else if(combo_now && !combo_back_sent && now - combo_back_started >= long_ticks) {
         combo_back_sent = true;
-        publish(pubsub, InputKeyBack, InputTypePress, sequence_counter);
+        publish(pubsub, InputKeyBack, InputTypeShort, sequence_counter);
     }
 
     for(size_t i = 0; i < sizeof(buttons) / sizeof(buttons[0]); i++) {
