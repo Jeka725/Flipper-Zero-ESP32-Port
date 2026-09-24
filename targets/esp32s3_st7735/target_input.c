@@ -18,7 +18,7 @@
 
 #define TAG "Input5Button"
 #define INPUT_DEBOUNCE_POLLS 3U
-#define INPUT_BACK_HOLD_MS 2000U
+#define INPUT_BACK_HOLD_MS 1000U
 
 typedef struct {
     gpio_num_t pin;
