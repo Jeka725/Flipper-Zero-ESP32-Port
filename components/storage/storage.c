@@ -353,6 +353,7 @@ bool storage_file_open(
     furi_mutex_release(file->storage->mutex);
 
     if(!file->handle) {
+        FURI_LOG_E(TAG, "Open failed: %s -> %s errno=%d", path, real_path, errno);
         file->error_id = storage_errno_to_fserror(errno);
         file->internal_error = errno;
         return false;
@@ -361,6 +362,7 @@ bool storage_file_open(
     file->is_open = true;
     file->is_dir = false;
     file->error_id = FSE_OK;
+    FURI_LOG_I(TAG, "File opened: %s -> %s", path, real_path);
     return true;
 }
 
@@ -582,7 +584,7 @@ bool storage_dir_open(File* file, const char* path) {
         return false;
     }
 
-    if(!file->storage->sd_mounted) {
+    if(!storage_is_ready(file->storage)) {
         file->error_id = FSE_NOT_READY;
         return false;
     }
@@ -604,6 +606,8 @@ bool storage_dir_open(File* file, const char* path) {
 
     file->dir_path = strdup(real_path);
     file->is_open = true;
+    FURI_LOG_I(TAG, "Directory opened: %s -> %s (sd=%d littlefs=%d)", path, real_path,
+               file->storage->sd_mounted, file->storage->littlefs_mounted);
     file->is_dir = true;
     file->error_id = FSE_OK;
     return true;
