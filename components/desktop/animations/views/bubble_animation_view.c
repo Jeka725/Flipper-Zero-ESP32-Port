@@ -239,12 +239,7 @@ static void bubble_animation_timer_callback(void* context) {
     if(!model->freeze_frame && !activate) {
         bubble_animation_next_frame(model);
         if(model->current) {
-            FURI_LOG_I(
-                "DolphinAnim",
-                "Drawing frame %u/%u",
-                (unsigned)model->current_frame + 1,
-                (unsigned)model->current->passive_frames +
-                    (unsigned)model->current->active_frames);
+            
         }
     }
 
