@@ -90,12 +90,22 @@ jobs:
             0x10000 "$BUILD/furi_esp32.bin" \
             0xC20000 "$BUILD/littlefs.bin"
 
-          echo "=== LittleFS ==="\n          ls -lh "$BUILD/littlefs.bin"\n\n          echo "=== Firmware ==="
+          echo "=== LittleFS ==="
+          ls -lh "$BUILD/littlefs.bin"
+
+          echo "=== Firmware ==="
           ls -lh "$STAGE/${BOARD}.bin"
 
-      - name: Upload single firmware artifact
+          rm -rf "$STAGE/wokwi"
+          mkdir -p "$STAGE/wokwi"
+          cp wokwi/diagram.json "$STAGE/wokwi/diagram.json"
+          cp wokwi/wokwi.toml "$STAGE/wokwi/wokwi.toml"
+          cp "$STAGE/${BOARD}.bin" "$STAGE/wokwi/${BOARD}.bin"
+          cp "$BUILD/littlefs.bin" "$STAGE/wokwi/littlefs.bin"
+
+      - name: Upload firmware and Wokwi project
         uses: actions/upload-artifact@v7
         with:
           name: flipper-esp32s3-st7735-firmware
-          path: artifact_staging/esp32s3_st7735.bin
+          path: artifact_staging/
           retention-days: 30
