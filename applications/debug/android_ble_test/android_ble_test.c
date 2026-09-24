@@ -20,7 +20,7 @@ static void android_ble_test_burst(void* context, uint32_t index) {
      * own Android phone. This is a beacon packet, not a system notification. */
     const uint8_t adv_data[] = {
         0x02, 0x01, 0x06,
-        0x0F, 0x09,
+        0x0E, 0x09,
         'E','S','P','3','2','-','S','3',' ','T','E','S','T'
     };
 
