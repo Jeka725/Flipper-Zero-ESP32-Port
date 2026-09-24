@@ -35,9 +35,10 @@
 #define BOARD_PIN_LCD_RST       15
 #define BOARD_PIN_LCD_BL         4
 
-/* Native ST7735S is 128x160. Use the ST7735 MADCTL landscape mode that
- * matches the physical mounting of this module: MV+MX (0x60, RGB).
- * Do NOT use MY here: MY+MV (0xA0) is the mirrored/opposite landscape mode. */
+/* Native ST7735S is 128x160. Use MV+MY (0xA0) for the required
+ * landscape orientation on this physically mounted module. This is the
+ * opposite of 0x60 (MV+MX), which mirrors the rendered image. */
+
 #define BOARD_LCD_H_RES          160
 #define BOARD_LCD_V_RES          128
 #define BOARD_LCD_SPI_HOST       SPI2_HOST
@@ -45,9 +46,9 @@
 #define BOARD_LCD_CMD_BITS       8
 #define BOARD_LCD_PARAM_BITS    8
 #define BOARD_LCD_SWAP_XY        true
-#define BOARD_LCD_MIRROR_X       true
+#define BOARD_LCD_MIRROR_X       false
 #define BOARD_LCD_MIRROR_Y       false
-#define BOARD_LCD_MADCTL          0x60
+#define BOARD_LCD_MADCTL          0xA0
 #define BOARD_LCD_INVERT_COLOR   false
 #define BOARD_LCD_GAP_X          0
 #define BOARD_LCD_GAP_Y          0
