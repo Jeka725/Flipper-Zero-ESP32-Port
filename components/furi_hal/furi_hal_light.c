@@ -131,6 +131,21 @@ void furi_hal_light_init(void) {
 
 void furi_hal_light_set(Light light, uint8_t value) {
     if(light & LightBacklight) {
+        /*
+         * The custom ESP32-S3 ST7735S board has a dedicated physical
+         * backlight on GPIO4. During the first GUI/notification startup
+         * sequence the generic Flipper light path can request 0 brightness.
+         * On this board that must NOT make the LCD disappear: the framebuffer
+         * and GUI keep running while only the LED backlight is dark.
+         *
+         * Keep the ST7735S backlight forced on for now. This is intentionally
+         * board-specific so other boards retain their normal brightness
+         * behaviour. Once startup is stable, brightness control can be
+         * reintroduced with an explicit board-safe setting.
+         */
+#if defined(BOARD_ID) && (strcmp(BOARD_ID, "esp32s3_st7735") == 0)
+        if(value == 0) value = UINT8_MAX;
+#endif
         ledc_set_duty(
             BACKLIGHT_LEDC_SPEED,
             BACKLIGHT_LEDC_CHANNEL,
