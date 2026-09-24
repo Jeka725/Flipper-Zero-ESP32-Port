@@ -11,6 +11,7 @@
 #include "assets_dolphin_internal.h"
 
 #include <furi_hal_random.h>
+#include <esp_heap_caps.h>
 
 #define TAG "AnimationManager"
 
