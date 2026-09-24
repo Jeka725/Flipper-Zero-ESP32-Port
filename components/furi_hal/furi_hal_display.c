@@ -245,18 +245,11 @@ void furi_hal_display_init(void) {
     ESP_ERROR_CHECK(esp_lcd_panel_reset(panel_handle));
     ESP_ERROR_CHECK(esp_lcd_panel_init(panel_handle));
 
-    /* Display orientation and corrections from board config (these (re)write
-     * MADCTL with our colour order + mirror/swap bits, and INVON/INVOFF). */
+    /* Apply one authoritative ST7735 MADCTL value.
+     * Do not call the generic swap/mirror helpers here: they can rewrite
+     * individual MADCTL bits after the driver init and conflict with the
+     * board-specific orientation. BOARD_LCD_MADCTL is the single source of truth. */
     ESP_ERROR_CHECK(esp_lcd_panel_invert_color(panel_handle, BOARD_LCD_INVERT_COLOR));
-    ESP_ERROR_CHECK(esp_lcd_panel_swap_xy(panel_handle, BOARD_LCD_SWAP_XY));
-    ESP_ERROR_CHECK(esp_lcd_panel_mirror(panel_handle, BOARD_LCD_MIRROR_X, BOARD_LCD_MIRROR_Y));
-
-    /*
-     * The Waveshare ST7735 component starts from its own MADCTL default.
-     * Re-assert the complete register value so no stale MX/MY/MV bit can
-     * survive a generic swap/mirror call. For this board 0x60 is:
-     * MX=1, MY=0, MV=1, RGB=0 -> landscape, not mirrored, RGB order.
-     */
     {
         const uint8_t madctl = BOARD_LCD_MADCTL;
         ESP_ERROR_CHECK(esp_lcd_panel_io_tx_param(io_handle, 0x36 /* MADCTL */, &madctl, 1));
