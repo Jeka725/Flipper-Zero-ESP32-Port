@@ -113,7 +113,8 @@ jobs:
           # Full image: bootloader + partition table + application in ONE .bin.
           # Standard ESP-IDF offsets: bootloader=0x0, partition table=0x8000,
           # application=0x10000.
-          esptool.py --chip "$CHIP" merge_bin \
+          source ~/esp/esp-idf/export.sh
+          python -m esptool --chip "$CHIP" merge_bin \
             -o "$STAGE/${BOARD}.bin" \
             --flash_size "$FLASH_SIZE" \
             0x0 "$BUILD/bootloader/bootloader.bin" \
