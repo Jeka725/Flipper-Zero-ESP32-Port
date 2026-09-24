@@ -464,7 +464,15 @@ static BubbleAnimation* animation_storage_load_animation(const char* name) {
 
 
         furi_string_printf(str, ANIMATION_DIR "/%s/" ANIMATION_META_FILE, name);
-        if(!flipper_format_file_open_existing(ff, furi_string_get_cstr(str))) break;
+        FURI_LOG_I(TAG, "LittleFS meta lookup: %s", furi_string_get_cstr(str));
+        if(!storage_common_exists(storage, furi_string_get_cstr(str))) {
+            FURI_LOG_E(TAG, "LittleFS meta missing: %s", furi_string_get_cstr(str));
+            break;
+        }
+        if(!flipper_format_file_open_existing(ff, furi_string_get_cstr(str))) {
+            FURI_LOG_E(TAG, "LittleFS meta open failed: %s", furi_string_get_cstr(str));
+            break;
+        }
         if(!flipper_format_read_header(ff, str, &u32value)) break;
         if(furi_string_cmp_str(str, "Flipper Animation")) break;
 
