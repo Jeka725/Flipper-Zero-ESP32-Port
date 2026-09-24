@@ -15,6 +15,7 @@
 #define TAG "AnimationManager"
 
 #define HARDCODED_ANIMATION_NAME "L1_Tv_128x47"
+#define LITTLEFS_TEST_ANIMATION_NAME "LFS_Tv_128x47"
 
 typedef enum {
     AnimationManagerStateIdle,
@@ -211,8 +212,21 @@ static StorageAnimation*
     animation_manager_select_idle_animation(AnimationManager* animation_manager) {
     (void)animation_manager;
 
-    /* Pick a random compiled-in animation. External LittleFS animations are
-     * loaded by animation_storage_find_animation() and are logged separately. */
+    /* Exercise the on-flash LittleFS animation path first. If it is unavailable,
+     * fall back to the compiled-in Dolphin set. */
+    static bool littlefs_probe_done = false;
+    if(!littlefs_probe_done) {
+        littlefs_probe_done = true;
+        StorageAnimation* littlefs_animation =
+            animation_storage_find_animation(LITTLEFS_TEST_ANIMATION_NAME);
+        if(littlefs_animation) {
+            FURI_LOG_I(TAG, "LittleFS animation selected: %s", LITTLEFS_TEST_ANIMATION_NAME);
+            return littlefs_animation;
+        }
+        FURI_LOG_W(TAG, "LittleFS animation unavailable; using internal animation");
+    }
+
+    /* Pick a random compiled-in animation. */
     const StorageAnimation* list = dolphin_internal;
     size_t count = dolphin_internal_size;
     FURI_LOG_I(TAG, "Animation list: internal=%u (LittleFS external lookup enabled)", count);
