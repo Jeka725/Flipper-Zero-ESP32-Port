@@ -120,6 +120,20 @@ static void animation_manager_start_new_idle(AnimationManager* animation_manager
     animation_manager_replace_current_animation(animation_manager, new_animation);
     const BubbleAnimation* bubble_animation =
         animation_storage_get_bubble_animation(animation_manager->current_animation);
+    static bool anim_diag_printed = false;
+    if(!anim_diag_printed) {
+        anim_diag_printed = true;
+        uint8_t err = animation_storage_get_last_error();
+        uint8_t loaded = bubble_animation ? bubble_animation->icon_animation.frame_count : 0;
+        uint8_t fps = bubble_animation ? bubble_animation->icon_animation.frame_rate : 0;
+        bool ok = bubble_animation && loaded && fps;
+        if(ok && err == 0) {
+            FURI_LOG_I(TAG, "ANIM: ok=1 loaded=%u fps=%u err=0", loaded, fps);
+        } else {
+            if(err == 0) err = 6;
+            FURI_LOG_I(TAG, "ANIM: ok=0 loaded=%u fps=%u err=%u", loaded, fps, err);
+        }
+    }
     FURI_LOG_I(
         TAG,
         "Animation loaded: %s, frames: %u+%u, fps: %u, duration: %u, w=%u, h=%u",
@@ -237,7 +251,6 @@ static StorageAnimation*
                 (unsigned)heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
             return littlefs_animation;
         }
-        FURI_LOG_W(TAG, "LittleFS animation unavailable; using internal animation");
     }
 
     /* Pick a random compiled-in animation. */
