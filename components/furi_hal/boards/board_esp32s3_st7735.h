@@ -16,10 +16,10 @@
 #define BOARD_TARGET      "esp32s3"
 
 /* Five active-low buttons with internal pull-ups. */
-#define BOARD_PIN_BUTTON_UP       9
-#define BOARD_PIN_BUTTON_DOWN    11
-#define BOARD_PIN_BUTTON_LEFT    12
-#define BOARD_PIN_BUTTON_RIGHT   13
+#define BOARD_PIN_BUTTON_UP      12
+#define BOARD_PIN_BUTTON_DOWN     9
+#define BOARD_PIN_BUTTON_LEFT    13
+#define BOARD_PIN_BUTTON_RIGHT   11
 #define BOARD_PIN_BUTTON_OK      14
 #define BOARD_PIN_BUTTON_BOOT    BOARD_PIN_BUTTON_OK
 
@@ -36,7 +36,7 @@
 #define BOARD_PIN_LCD_BL         4
 
 /* Native ST7735S is 128x160; swap_xy gives the requested 160x128 landscape.
- * The current physical orientation is 180 degrees from the previous build. */
+ * Keep the original landscape orientation; do not apply a 180-degree flip. */
 #define BOARD_LCD_H_RES          160
 #define BOARD_LCD_V_RES          128
 #define BOARD_LCD_SPI_HOST       SPI2_HOST
@@ -44,7 +44,7 @@
 #define BOARD_LCD_CMD_BITS       8
 #define BOARD_LCD_PARAM_BITS    8
 #define BOARD_LCD_SWAP_XY        true
-#define BOARD_LCD_MIRROR_X       true
+#define BOARD_LCD_MIRROR_X       false
 #define BOARD_LCD_MIRROR_Y       true
 #define BOARD_LCD_INVERT_COLOR   false
 #define BOARD_LCD_GAP_X          0
