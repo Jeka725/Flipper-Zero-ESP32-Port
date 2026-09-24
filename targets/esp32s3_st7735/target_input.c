@@ -2,7 +2,8 @@
  * @file target_input.c
  * Five-button input driver for ESP32-S3 N16R8 ST7735S board.
  *
- * UP=GPIO9, DOWN=GPIO11, LEFT=GPIO12, RIGHT=GPIO13, OK=GPIO14.
+ * Physical wiring is GPIO9,11,12,13,14. Logical mapping: GPIO9=LEFT,
+ * GPIO11=RIGHT, GPIO12=UP, GPIO13=DOWN, GPIO14=OK.
  * All buttons are active-low and use the ESP32 internal pull-ups.
  */
 #include "target_input.h"
@@ -29,12 +30,16 @@ typedef struct {
 } Button;
 
 static Button buttons[] = {
-    {(gpio_num_t)BOARD_PIN_BUTTON_UP, InputKeyUp, false, false, 0, 0, 0, false, false},
-    {(gpio_num_t)BOARD_PIN_BUTTON_DOWN, InputKeyDown, false, false, 0, 0, 0, false, false},
-    {(gpio_num_t)BOARD_PIN_BUTTON_LEFT, InputKeyLeft, false, false, 0, 0, 0, false, false},
-    {(gpio_num_t)BOARD_PIN_BUTTON_RIGHT, InputKeyRight, false, false, 0, 0, 0, false, false},
+    {(gpio_num_t)BOARD_PIN_BUTTON_UP, InputKeyLeft, false, false, 0, 0, 0, false, false},
+    {(gpio_num_t)BOARD_PIN_BUTTON_DOWN, InputKeyRight, false, false, 0, 0, 0, false, false},
+    {(gpio_num_t)BOARD_PIN_BUTTON_LEFT, InputKeyUp, false, false, 0, 0, 0, false, false},
+    {(gpio_num_t)BOARD_PIN_BUTTON_RIGHT, InputKeyDown, false, false, 0, 0, 0, false, false},
     {(gpio_num_t)BOARD_PIN_BUTTON_OK, InputKeyOk, false, false, 0, 0, 0, false, false},
 };
+
+static bool combo_back_active = false;
+static uint32_t combo_back_started = 0;
+static bool combo_back_sent = false;
 
 static void publish(FuriPubSub* pubsub, InputKey key, InputType type, uint32_t* seq) {
     InputEvent event = {
@@ -65,13 +70,29 @@ void target_input_init(void) {
         buttons[i].debounce = INPUT_DEBOUNCE_POLLS;
         buttons[i].back_on_long = false;
     }
-    FURI_LOG_I(TAG, "5-button input: UP=9 DOWN=11 LEFT=12 RIGHT=13 OK=14; OK hold=2s Back");
+    FURI_LOG_I(TAG, "5-button input: GPIO9=LEFT GPIO11=RIGHT GPIO12=UP GPIO13=DOWN GPIO14=OK; GPIO9+GPIO11 hold=2s Back");
 }
 
 void target_input_poll(FuriPubSub* pubsub, uint32_t* sequence_counter) {
     const uint32_t now = furi_get_tick();
     const uint32_t long_ticks = furi_ms_to_ticks(INPUT_LONG_PRESS_MS);
     const uint32_t repeat_ticks = furi_ms_to_ticks(INPUT_REPEAT_MS);
+
+    /* GPIO9 + GPIO11 is the dedicated two-button Back shortcut. */
+    const bool combo_now = (gpio_get_level((gpio_num_t)BOARD_PIN_BUTTON_UP) == 0) &&
+                           (gpio_get_level((gpio_num_t)BOARD_PIN_BUTTON_DOWN) == 0);
+    if(combo_now && !combo_back_active) {
+        combo_back_active = true;
+        combo_back_started = now;
+        combo_back_sent = false;
+    } else if(!combo_now) {
+        combo_back_active = false;
+        combo_back_sent = false;
+    } else if(!combo_back_sent && now - combo_back_started >= long_ticks) {
+        combo_back_sent = true;
+        publish(pubsub, InputKeyBack, InputTypePress, sequence_counter);
+        publish(pubsub, InputKeyBack, InputTypeLong, sequence_counter);
+    }
 
     for(size_t i = 0; i < sizeof(buttons) / sizeof(buttons[0]); i++) {
         Button* b = &buttons[i];
