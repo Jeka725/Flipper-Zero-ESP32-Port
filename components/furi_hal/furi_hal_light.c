@@ -19,6 +19,7 @@
 #include <driver/ledc.h>
 #include <driver/gpio.h>
 #include <esp_log.h>
+#include <string.h>
 
 #ifdef BOARD_PIN_WS2812_DATA
 #include <led_strip.h>
