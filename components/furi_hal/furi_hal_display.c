@@ -365,14 +365,25 @@ void furi_hal_display_commit(const uint8_t* data, uint32_t size) {
 }
 
 void furi_hal_display_set_backlight(uint8_t brightness) {
-    /* brightness 0 means "screen off" here, so pair it with panel sleep; GRAM
-     * is retained, so waking shows the last frame with no re-init. */
-    if(brightness == 0) {
-        furi_hal_light_set(LightBacklight, 0);
-        furi_hal_display_sleep();
-    } else {
+    /*
+     * Backlight brightness and LCD panel sleep are separate states.
+     *
+     * The GUI/power/notification services may legitimately set the
+     * backlight to 0 during startup or while applying saved settings. If
+     * brightness=0 also puts the ST7735S into SLPIN/DISPOFF, a later
+     * brightness update is not guaranteed to wake the panel, which leaves
+     * the boot frame visible briefly and then the whole GUI appears black.
+     *
+     * Keep this function responsible only for the physical backlight.
+     * Explicit display sleep/wakeup remains handled by
+     * furi_hal_display_sleep()/furi_hal_display_wakeup().
+     */
+    furi_hal_light_set(LightBacklight, brightness);
+
+    /* If the panel was explicitly put to sleep earlier, any non-zero
+     * brightness request is also a useful wake request. */
+    if(brightness > 0 && panel_is_asleep) {
         furi_hal_display_wakeup();
-        furi_hal_light_set(LightBacklight, brightness);
     }
 }
 
