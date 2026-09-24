@@ -1108,6 +1108,15 @@ int32_t storage_srv(void* p) {
     if(littlefs_err == ESP_OK) {
         storage->littlefs_mounted = true;
         ESP_LOGI(TAG, "LittleFS mounted at %s", BOARD_LITTLEFS_BASE_PATH);
+        const char* manifest_path = EXT_PATH("dolphin/manifest.txt");
+        FileInfo manifest_info = {0};
+        FS_Error manifest_stat = storage_common_stat(storage, manifest_path, &manifest_info);
+        ESP_LOGI(
+            TAG,
+            "LittleFS animation probe: manifest=%d size=%llu path=%s",
+            manifest_stat == FSE_OK,
+            manifest_stat == FSE_OK ? (unsigned long long)manifest_info.size : 0ULL,
+            manifest_path);
     } else {
         ESP_LOGE(TAG, "LittleFS mount failed: %s", esp_err_to_name(littlefs_err));
     }
