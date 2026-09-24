@@ -19,7 +19,6 @@
 #include <driver/ledc.h>
 #include <driver/gpio.h>
 #include <esp_log.h>
-#include <string.h>
 
 #ifdef BOARD_PIN_WS2812_DATA
 #include <led_strip.h>
@@ -144,7 +143,7 @@ void furi_hal_light_set(Light light, uint8_t value) {
          * behaviour. Once startup is stable, brightness control can be
          * reintroduced with an explicit board-safe setting.
          */
-#if defined(BOARD_ID) && (strcmp(BOARD_ID, "esp32s3_st7735") == 0)
+#ifdef BOARD_ST7735S
         if(value == 0) value = UINT8_MAX;
 #endif
         ledc_set_duty(
