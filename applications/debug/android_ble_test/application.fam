@@ -1,0 +1,11 @@
+App(
+    appid="android_ble_test",
+    name="Android BLE Test",
+    apptype=FlipperAppType.DEBUG,
+    entry_point="android_ble_test_app",
+    cdefines=["SRV_BT"],
+    requires=["bt", "gui"],
+    provides=["android_ble_test"],
+    stack_size=2 * 1024,
+    fap_category="Debug",
+)
