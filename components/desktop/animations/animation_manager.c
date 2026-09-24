@@ -126,13 +126,10 @@ static void animation_manager_start_new_idle(AnimationManager* animation_manager
         uint8_t err = animation_storage_get_last_error();
         uint8_t loaded = bubble_animation ? bubble_animation->icon_animation.frame_count : 0;
         uint8_t fps = bubble_animation ? bubble_animation->icon_animation.frame_rate : 0;
-        bool ok = bubble_animation && loaded && fps;
-        if(ok && err == 0) {
-            FURI_LOG_I(TAG, "ANIM: ok=1 loaded=%u fps=%u err=0", loaded, fps);
-        } else {
-            if(err == 0) err = 6;
-            FURI_LOG_I(TAG, "ANIM: ok=0 loaded=%u fps=%u err=%u", loaded, fps, err);
-        }
+        bool external = animation_manager->current_animation->external;
+        bool ok = external && bubble_animation && loaded && fps && err == 0;
+        if(!ok && err == 0) err = external ? 6 : 1;
+        FURI_LOG_I("ANIM", "ANIM: ok=%u loaded=%u fps=%u err=%u", ok ? 1 : 0, loaded, fps, err);
     }
     animation_manager->state = AnimationManagerStateIdle;
     furi_timer_start(animation_manager->idle_animation_timer, bubble_animation->duration * 1000);
