@@ -84,7 +84,7 @@ endif()
 
 idf_component_register(
     SRCS ${FURI_HAL_SRCS}
-    INCLUDE_DIRS "." ".." "../.." "boards"
+    INCLUDE_DIRS "." ".." "../.." "../../targets" "boards"
     REQUIRES ${FURI_HAL_REQUIRES}
 )
 
