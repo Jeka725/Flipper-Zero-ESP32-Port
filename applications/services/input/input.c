@@ -10,6 +10,11 @@
 #include <cli/cli_main_commands.h>
 #include <toolbox/pipe.h>
 
+#if defined(BOARD_PIN_BUTTON_OK)
+#include <boards/board.h>
+#include "target_input.h"
+#endif
+
 #define INPUT_DEBOUNCE_TICKS_HALF (INPUT_DEBOUNCE_TICKS / 2)
 #define INPUT_PRESS_TICKS         150
 #define INPUT_LONG_PRESS_COUNTS   2
@@ -97,6 +102,13 @@ int32_t input_srv(void* p) {
     furi_record_create(RECORD_INPUT_SETTINGS, settings);
     input_settings_load(settings);
 
+#if defined(BOARD_PIN_BUTTON_OK)
+    /* This board uses its own five-button GPIO driver. Do not also run the
+     * generic input_pins driver, otherwise the same buttons can generate
+     * conflicting events. */
+    target_input_init();
+#endif
+
 #ifdef INPUT_DEBUG
     furi_hal_gpio_init_simple(&gpio_ext_pa4, GpioModeOutputPushPull);
 #endif
@@ -108,6 +120,12 @@ int32_t input_srv(void* p) {
     furi_record_close(RECORD_CLI);
 #endif
 
+#if defined(BOARD_PIN_BUTTON_OK)
+    while(1) {
+        target_input_poll(event_pubsub, &counter);
+        furi_delay_ms(1);
+    }
+#else
     InputPinState pin_states[input_pins_count];
 
     for(size_t i = 0; i < input_pins_count; i++) {
@@ -185,6 +203,8 @@ int32_t input_srv(void* p) {
             furi_thread_flags_wait(INPUT_THREAD_FLAG_ISR, FuriFlagWaitAny, FuriWaitForever);
         }
     }
+
+#endif
 
     return 0;
 }
