@@ -10,9 +10,7 @@
 
 /* Legacy display pixel format default; ST7735S boards override this with 0x05. */
 #ifndef BOARD_LCD_COLMOD
-#ifndef BOARD_LCD_COLMOD
 #define BOARD_LCD_COLMOD 0x55
-#endif
 #endif
 
 #if defined(BOARD_INCLUDE)
