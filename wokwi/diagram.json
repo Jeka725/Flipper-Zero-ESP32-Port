@@ -1,0 +1,43 @@
+{
+  "version": 1,
+  "author": "Jeka725",
+  "editor": "wokwi",
+  "parts": [
+    {
+      "type": "board-esp32-s3-devkitc-1",
+      "id": "esp",
+      "top": 0,
+      "left": -120,
+      "attrs": {
+        "flashSize": "16",
+        "psramSize": "8",
+        "psramType": "octal",
+        "serialInterface": "USB_SERIAL_JTAG"
+      }
+    },
+    {
+      "type": "chip-st7735",
+      "id": "lcd",
+      "top": -20,
+      "left": 220,
+      "attrs": {}
+    }
+  ],
+  "connections": [
+    ["lcd:VCC", "esp:3V3", "red", []],
+    ["lcd:GND", "esp:GND.1", "black", []],
+    ["lcd:SCL", "esp:5", "green", []],
+    ["lcd:SDA", "esp:6", "green", []],
+    ["lcd:CS", "esp:16", "orange", []],
+    ["lcd:DC", "esp:7", "purple", []],
+    ["lcd:RST", "esp:15", "blue", []],
+    ["lcd:BLK", "esp:4", "yellow", []]
+  ],
+  "dependencies": {
+    "chip-st7735": "github:martysweet/[email protected]"
+  },
+  "serialMonitor": {
+    "display": "always",
+    "newline": "lf"
+  }
+}
