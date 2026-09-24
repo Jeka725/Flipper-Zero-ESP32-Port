@@ -26,15 +26,14 @@ typedef struct {
     uint32_t pressed_at;
     uint32_t repeat_at;
     bool long_sent;
-    bool back_on_long;
 } Button;
 
 static Button buttons[] = {
-    {(gpio_num_t)BOARD_PIN_BUTTON_UP, InputKeyUp, false, false, 0, 0, 0, false, false},
-    {(gpio_num_t)BOARD_PIN_BUTTON_DOWN, InputKeyDown, false, false, 0, 0, 0, false, false},
-    {(gpio_num_t)BOARD_PIN_BUTTON_LEFT, InputKeyLeft, false, false, 0, 0, 0, false, false},
-    {(gpio_num_t)BOARD_PIN_BUTTON_RIGHT, InputKeyRight, false, false, 0, 0, 0, false, false},
-    {(gpio_num_t)BOARD_PIN_BUTTON_OK, InputKeyOk, false, false, 0, 0, 0, false, false},
+    {(gpio_num_t)BOARD_PIN_BUTTON_UP, InputKeyUp, false, false, 0, 0, 0, false},
+    {(gpio_num_t)BOARD_PIN_BUTTON_DOWN, InputKeyDown, false, false, 0, 0, 0, false},
+    {(gpio_num_t)BOARD_PIN_BUTTON_LEFT, InputKeyLeft, false, false, 0, 0, 0, false},
+    {(gpio_num_t)BOARD_PIN_BUTTON_RIGHT, InputKeyRight, false, false, 0, 0, 0, false},
+    {(gpio_num_t)BOARD_PIN_BUTTON_OK, InputKeyOk, false, false, 0, 0, 0, false},
 };
 
 static bool combo_back_active = false;
@@ -68,7 +67,6 @@ void target_input_init(void) {
         buttons[i].raw = pressed(&buttons[i]);
         buttons[i].stable = buttons[i].raw;
         buttons[i].debounce = INPUT_DEBOUNCE_POLLS;
-        buttons[i].back_on_long = false;
     }
     FURI_LOG_I(TAG, "5-button input: SELECT=14 RIGHT=13 LEFT=12 UP=11 DOWN=9; UP+DOWN hold=2s Back");
 }
@@ -96,7 +94,6 @@ void target_input_poll(FuriPubSub* pubsub, uint32_t* sequence_counter) {
                 buttons[j].debounce = INPUT_DEBOUNCE_POLLS;
                 buttons[j].pressed_at = now;
                 buttons[j].long_sent = true;
-                buttons[j].back_on_long = false;
             }
         }
     } else if(!combo_now && combo_back_active) {
@@ -159,7 +156,6 @@ void target_input_poll(FuriPubSub* pubsub, uint32_t* sequence_counter) {
             b->pressed_at = now;
             b->repeat_at = now;
             b->long_sent = false;
-            b->back_on_long = false;
             publish(pubsub, b->key, InputTypePress, sequence_counter);
         } else {
             /* Short MUST be sent before Release. */
