@@ -78,28 +78,53 @@ void target_input_poll(FuriPubSub* pubsub, uint32_t* sequence_counter) {
     const uint32_t long_ticks = furi_ms_to_ticks(INPUT_LONG_PRESS_MS);
     const uint32_t repeat_ticks = furi_ms_to_ticks(INPUT_REPEAT_MS);
 
-    /* UP + DOWN held together for 2 seconds is a dedicated Back shortcut.
-     * Send a normal Back Press/Release pair (not InputTypeLong): Back navigation
-     * in Flipper applications is handled by the ordinary Press event. */
+    /* UP + DOWN held together for 2 seconds is the dedicated Back shortcut.
+     * While the combo is held, suppress UP/DOWN events completely so the
+     * application does not also receive movement/navigation events. */
     const bool combo_now = (gpio_get_level((gpio_num_t)BOARD_PIN_BUTTON_UP) == 0) &&
                            (gpio_get_level((gpio_num_t)BOARD_PIN_BUTTON_DOWN) == 0);
     if(combo_now && !combo_back_active) {
         combo_back_active = true;
         combo_back_started = now;
         combo_back_sent = false;
-    } else if(!combo_now) {
+
+        /* Consume both physical keys as part of the combo. */
+        for(size_t j = 0; j < sizeof(buttons) / sizeof(buttons[0]); j++) {
+            if(buttons[j].key == InputKeyUp || buttons[j].key == InputKeyDown) {
+                buttons[j].raw = true;
+                buttons[j].stable = true;
+                buttons[j].debounce = INPUT_DEBOUNCE_POLLS;
+                buttons[j].pressed_at = now;
+                buttons[j].long_sent = true;
+                buttons[j].back_on_long = false;
+            }
+        }
+    } else if(!combo_now && combo_back_active) {
         if(combo_back_sent) {
             publish(pubsub, InputKeyBack, InputTypeRelease, sequence_counter);
         }
+        /* Consume the release of both combo keys. */
+        for(size_t j = 0; j < sizeof(buttons) / sizeof(buttons[0]); j++) {
+            if(buttons[j].key == InputKeyUp || buttons[j].key == InputKeyDown) {
+                buttons[j].raw = false;
+                buttons[j].stable = false;
+                buttons[j].debounce = INPUT_DEBOUNCE_POLLS;
+                buttons[j].long_sent = false;
+                buttons[j].back_on_long = false;
+            }
+        }
         combo_back_active = false;
         combo_back_sent = false;
-    } else if(!combo_back_sent && now - combo_back_started >= long_ticks) {
+    } else if(combo_now && !combo_back_sent && now - combo_back_started >= long_ticks) {
         combo_back_sent = true;
         publish(pubsub, InputKeyBack, InputTypePress, sequence_counter);
     }
 
     for(size_t i = 0; i < sizeof(buttons) / sizeof(buttons[0]); i++) {
         Button* b = &buttons[i];
+        if(combo_now && (b->key == InputKeyUp || b->key == InputKeyDown)) {
+            continue;
+        }
         const bool raw = pressed(b);
 
         if(raw != b->raw) {
@@ -118,16 +143,7 @@ void target_input_poll(FuriPubSub* pubsub, uint32_t* sequence_counter) {
                     b->long_sent = true;
                     b->repeat_at = now;
 
-                    /*
-                     * ViewDispatcher requires a matching Press before Long.
-                     * A synthetic Back press/long pair makes OK-hold work as
-                     * navigation Back without turning a normal OK press into Back.
-                     */
-                    if(b->key == InputKeyOk) {
-                        publish(pubsub, b->key, InputTypeLong, sequence_counter);
-                    } else {
-                        publish(pubsub, b->key, InputTypeLong, sequence_counter);
-                    }
+                    publish(pubsub, b->key, InputTypeLong, sequence_counter);
                 } else if(b->long_sent && now - b->repeat_at >= repeat_ticks) {
                     b->repeat_at = now;
                     if(b->key != InputKeyOk) {
