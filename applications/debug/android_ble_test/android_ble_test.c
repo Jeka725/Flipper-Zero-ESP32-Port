@@ -16,8 +16,7 @@ static void android_ble_test_burst(void* context, uint32_t index) {
     UNUSED(index);
     furi_assert(context);
 
-    /* One short, controlled BLE advertising burst for testing this user's
-     * own Android phone. This is a beacon packet, not a system notification. */
+    /* Toggle the BLE test beacon. It stays active until the same item is selected again. */
     const uint8_t adv_data[] = {
         0x02, 0x01, 0x06,
         0x0E, 0x09,
@@ -44,11 +43,16 @@ static void android_ble_test_burst(void* context, uint32_t index) {
         return;
     }
 
-    if(furi_hal_bt_extra_beacon_start()) {
-        FURI_LOG_I(TAG, "Android BLE test burst started");
-        furi_delay_ms(1500);
+    static bool active = false;
+    if(active) {
         furi_hal_bt_extra_beacon_stop();
-        FURI_LOG_I(TAG, "Android BLE test burst stopped");
+        active = false;
+        submenu_change_item_label(app->submenu, 0, "Start BLE test");
+        FURI_LOG_I(TAG, "Android BLE test stopped");
+    } else if(furi_hal_bt_extra_beacon_start()) {
+        active = true;
+        submenu_change_item_label(app->submenu, 0, "Stop BLE test");
+        FURI_LOG_I(TAG, "Android BLE test started");
     } else {
         FURI_LOG_E(TAG, "Failed to start BLE test beacon");
     }
@@ -73,7 +77,7 @@ int32_t android_ble_test_app(void* p) {
     submenu_set_header(app->submenu, "Android BLE test");
     submenu_add_item(
         app->submenu,
-        "Send test burst",
+        "Start BLE test",
         0,
         android_ble_test_burst,
         app);
@@ -87,6 +91,7 @@ int32_t android_ble_test_app(void* p) {
     view_dispatcher_switch_to_view(app->dispatcher, 0);
     view_dispatcher_run(app->dispatcher);
 
+    furi_hal_bt_extra_beacon_stop();
     view_dispatcher_remove_view(app->dispatcher, 0);
     submenu_free(app->submenu);
     view_dispatcher_free(app->dispatcher);
