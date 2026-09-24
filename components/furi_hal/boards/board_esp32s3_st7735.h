@@ -16,8 +16,8 @@
 #define BOARD_TARGET      "esp32s3"
 
 /* Five active-low buttons with internal pull-ups. */
-#define BOARD_PIN_BUTTON_UP      11
-#define BOARD_PIN_BUTTON_DOWN     9
+#define BOARD_PIN_BUTTON_UP       9
+#define BOARD_PIN_BUTTON_DOWN    11
 #define BOARD_PIN_BUTTON_LEFT    12
 #define BOARD_PIN_BUTTON_RIGHT   13
 #define BOARD_PIN_BUTTON_OK      14
