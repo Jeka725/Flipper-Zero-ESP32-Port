@@ -103,11 +103,15 @@ void target_input_poll(FuriPubSub* pubsub, uint32_t* sequence_counter) {
                 b->back_sent = true;
 
                 /*
-                 * Flipper's normal logical Back handling commonly consumes
-                 * InputTypeShort. Send it HERE at 2 seconds, not on release,
-                 * and never send InputTypePress for the Back shortcut.
+                 * ViewDispatcher requires a complementary Press before it
+                 * accepts a Short/Long event. A lone Back/Short is discarded
+                 * as a non-complementary event. Emit a complete logical key
+                 * sequence at the 2-second threshold so Back is guaranteed to
+                 * reach the normal navigation path.
                  */
+                publish(pubsub, InputKeyBack, InputTypePress, sequence_counter);
                 publish(pubsub, InputKeyBack, InputTypeShort, sequence_counter);
+                publish(pubsub, InputKeyBack, InputTypeRelease, sequence_counter);
                 FURI_LOG_I(TAG, "2s hold: key=%d -> Back Short", (int)b->key);
             }
             continue;
