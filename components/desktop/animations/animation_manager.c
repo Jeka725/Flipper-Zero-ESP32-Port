@@ -124,8 +124,8 @@ static void animation_manager_start_new_idle(AnimationManager* animation_manager
         animation_storage_get_meta(new_animation)->name,
         bubble_animation->passive_frames,
         bubble_animation->active_frames,
-        bubble_animation->duration,
         bubble_animation->icon_animation.frame_rate,
+        bubble_animation->duration,
         bubble_animation->icon_animation.width,
         bubble_animation->icon_animation.height);
     animation_manager->state = AnimationManagerStateIdle;
