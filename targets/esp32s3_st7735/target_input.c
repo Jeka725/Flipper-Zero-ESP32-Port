@@ -13,7 +13,7 @@
 
 #define TAG "Input5Button"
 #define INPUT_DEBOUNCE_POLLS 3U
-#define INPUT_LONG_PRESS_MS 500U
+#define INPUT_LONG_PRESS_MS 2000U
 #define INPUT_REPEAT_MS 200U
 
 typedef struct {
@@ -96,11 +96,21 @@ void target_input_poll(FuriPubSub* pubsub, uint32_t* sequence_counter) {
                 if(!b->long_sent && held >= long_ticks) {
                     b->long_sent = true;
                     b->repeat_at = now;
-                    publish(pubsub, b->key, InputTypePress, sequence_counter);
-                    publish(pubsub, b->key, InputTypeLong, sequence_counter);
+
+                    // On this board the center/OK key is also Back/Exit when held for 2 seconds.
+                    if(b->key == InputKeyOk) {
+                        publish(pubsub, InputKeyBack, InputTypePress, sequence_counter);
+                        publish(pubsub, InputKeyBack, InputTypeLong, sequence_counter);
+                    } else {
+                        publish(pubsub, b->key, InputTypePress, sequence_counter);
+                        publish(pubsub, b->key, InputTypeLong, sequence_counter);
+                    }
                 } else if(b->long_sent && now - b->repeat_at >= repeat_ticks) {
                     b->repeat_at = now;
-                    publish(pubsub, b->key, InputTypeRepeat, sequence_counter);
+                    // Do not repeat Back after the 2-second OK hold.
+                    if(b->key != InputKeyOk) {
+                        publish(pubsub, b->key, InputTypeRepeat, sequence_counter);
+                    }
                 }
             }
             continue;
