@@ -11,6 +11,8 @@
 
 #define TAG "Mp3I2S"
 
+#if BOARD_HAS_SPEAKER
+
 /* DMA buffer geometry. Helix produces 1152 stereo samples per frame,
  * so a chunk of 576 frames keeps the writer in lockstep with the decoder
  * (two writes per Helix frame) without making the latency too large. */
@@ -244,3 +246,37 @@ bool mp3_i2s_has_pending(void) {
     furi_mutex_release(rb_mutex);
     return any;
 }
+
+
+#else
+
+bool mp3_i2s_init(uint32_t sample_rate) {
+    (void)sample_rate;
+    return false;
+}
+
+void mp3_i2s_deinit(void) {
+}
+
+void mp3_i2s_set_sample_rate(uint32_t sample_rate) {
+    (void)sample_rate;
+}
+
+void mp3_i2s_set_volume(uint8_t volume) {
+    (void)volume;
+}
+
+size_t mp3_i2s_push(const int16_t* stereo_pcm, size_t n_frames, uint32_t timeout_ms) {
+    (void)stereo_pcm;
+    (void)timeout_ms;
+    return n_frames;
+}
+
+void mp3_i2s_flush(void) {
+}
+
+bool mp3_i2s_has_pending(void) {
+    return false;
+}
+
+#endif /* BOARD_HAS_SPEAKER */
