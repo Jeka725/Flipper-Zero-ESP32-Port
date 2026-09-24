@@ -36,8 +36,9 @@
 #define BOARD_PIN_LCD_RST       15
 #define BOARD_PIN_LCD_BL         4
 
-/* Native ST7735S is 128x160. Use MV+MY (0xA0) for the required landscape orientation without
- * the horizontal mirroring seen with the previous MV+MX (0x60) setting. */
+/* The LCD is wired in landscape (160x128 logical framebuffer). 0xA0 was the
+ * previous landscape orientation; 0x60 flips both axes while keeping MV set,
+ * which is the true 180-degree counterpart for this direct esp_lcd setup. */
 
 #define BOARD_LCD_H_RES          160
 #define BOARD_LCD_V_RES          128
