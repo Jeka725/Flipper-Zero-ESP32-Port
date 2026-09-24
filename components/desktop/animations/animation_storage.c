@@ -36,7 +36,6 @@ static bool animation_storage_load_single_manifest_info(
 
     do {
         uint32_t u32value;
-        if(FSE_OK != storage_sd_status(storage)) break;
         if(!flipper_format_file_open_existing(file, ANIMATION_MANIFEST_FILE)) break;
 
         if(!flipper_format_read_header(file, read_string, &u32value)) break;
@@ -93,7 +92,6 @@ void animation_storage_fill_animation_list(StorageAnimationList_t* animation_lis
         uint32_t u32value;
         StorageAnimation* storage_animation = NULL;
 
-        if(FSE_OK != storage_sd_status(storage)) break;
         if(!flipper_format_file_open_existing(file, ANIMATION_MANIFEST_FILE)) break;
         if(!flipper_format_read_header(file, read_string, &u32value)) break;
         if(furi_string_cmp_str(read_string, "Flipper Animation Manifest")) break;
@@ -118,6 +116,7 @@ void animation_storage_fill_animation_list(StorageAnimationList_t* animation_lis
             storage_animation->manifest_info.weight = u32value;
 
             StorageAnimationList_push_back(*animation_list, storage_animation);
+            FURI_LOG_I(TAG, "Manifest animation found: %s", storage_animation->manifest_info.name);
         } while(1);
 
         animation_storage_free_storage_animation(&storage_animation);
@@ -130,6 +129,7 @@ void animation_storage_fill_animation_list(StorageAnimationList_t* animation_lis
     for(size_t i = 0; i < dolphin_internal_size; ++i) {
         StorageAnimationList_push_back(*animation_list, (StorageAnimation*)&dolphin_internal[i]);
     }
+    FURI_LOG_I(TAG, "Animation list complete: %u total entries", (unsigned)StorageAnimationList_size(*animation_list));
 
     furi_record_close(RECORD_STORAGE);
 }
@@ -443,7 +443,6 @@ static BubbleAnimation* animation_storage_load_animation(const char* name) {
     do {
         uint32_t u32value;
 
-        if(FSE_OK != storage_sd_status(storage)) break;
 
         furi_string_printf(str, ANIMATION_DIR "/%s/" ANIMATION_META_FILE, name);
         if(!flipper_format_file_open_existing(ff, furi_string_get_cstr(str))) break;
