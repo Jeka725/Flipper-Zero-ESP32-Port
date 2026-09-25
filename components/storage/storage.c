@@ -26,6 +26,7 @@
 
 #ifdef BOARD_HAS_LITTLEFS
 #include <esp_vfs_littlefs.h>
+#include <esp_littlefs.h>
 #endif
 
 static const char* TAG = "Storage";
@@ -81,8 +82,13 @@ static void storage_ensure_app_alias_dir(Storage* storage, const char* real_root
     char base_path[256];
     char app_path[256];
 
-    snprintf(base_path, sizeof(base_path), "%s/%s", SD_MOUNT_POINT, real_root);
-    snprintf(app_path, sizeof(app_path), "%s/%s/%s", SD_MOUNT_POINT, real_root, storage_current_appid());
+    #ifdef BOARD_HAS_LITTLEFS
+    const char* root = BOARD_LITTLEFS_BASE_PATH;
+#else
+    const char* root = SD_MOUNT_POINT;
+#endif
+    snprintf(base_path, sizeof(base_path), "%s/%s", root, real_root);
+    snprintf(app_path, sizeof(app_path), "%s/%s/%s", root, real_root, storage_current_appid());
 
     storage_sd_bus_lock();
     mkdir(base_path, 0755);
@@ -134,12 +140,24 @@ static bool storage_map_path(const char* path, char* out, size_t out_size) {
         return true;
     }
     if(strncmp(path, STORAGE_ANY_PATH_PREFIX, 4) == 0) {
-        snprintf(out, out_size, "%s%s", SD_MOUNT_POINT, path + 4);
+        snprintf(out, out_size, "%s%s",
+#ifdef BOARD_HAS_LITTLEFS
+                 BOARD_LITTLEFS_BASE_PATH,
+#else
+                 SD_MOUNT_POINT,
+#endif
+                 path + 4);
         return true;
     }
     if(strncmp(path, STORAGE_INT_PATH_PREFIX, 4) == 0) {
-        /* Internal storage — map to /sdcard/.int for now */
-        snprintf(out, out_size, "%s/.int%s", SD_MOUNT_POINT, path + 4);
+        /* Internal storage is backed by the same on-flash LittleFS volume. */
+        snprintf(out, out_size, "%s/.int%s",
+#ifdef BOARD_HAS_LITTLEFS
+                 BOARD_LITTLEFS_BASE_PATH,
+#else
+                 SD_MOUNT_POINT,
+#endif
+                 path + 4);
         return true;
     }
     if(storage_build_app_alias_path(
@@ -901,8 +919,15 @@ FS_Error storage_common_fs_info(
     FuriHalSdInfo info;
     if(furi_hal_sd_info(&info) != FuriStatusOk) return FSE_INTERNAL;
 
+#ifdef BOARD_HAS_LITTLEFS
+    size_t total = 0, used = 0;
+    if(storage->littlefs_mounted && esp_littlefs_info(BOARD_LITTLEFS_PARTITION, &total, &used) == ESP_OK) {
+        if(total_space) *total_space = total;
+        if(free_space) *free_space = total > used ? total - used : 0;
+        return FSE_OK;
+    }
+#endif
     if(total_space) *total_space = info.capacity;
-    /* Free space not easily available without FATFS API — estimate */
     if(free_space) *free_space = 0;
 
     return FSE_OK;
@@ -990,6 +1015,9 @@ FS_Error storage_sd_info(Storage* storage, SDInfo* info) {
 
 FS_Error storage_sd_status(Storage* storage) {
     furi_assert(storage);
+#ifdef BOARD_HAS_LITTLEFS
+    if(storage->littlefs_mounted) return FSE_OK;
+#endif
     if(storage->sd_mounted) return FSE_OK;
     return FSE_NOT_READY;
 }
@@ -1122,26 +1150,29 @@ int32_t storage_srv(void* p) {
     }
 #endif
 
-    /* Try to mount SD card */
-    ESP_LOGI(TAG, "Attempting SD card mount...");
-    if(furi_hal_sd_mount()) {
-        storage->sd_mounted = true;
-        ESP_LOGI(TAG, "SD card mounted successfully");
-
-        /* Ensure the internal-storage shadow dir exists (for /int paths) */
-        if(mkdir(SD_MOUNT_POINT "/.int", 0755) != 0 && errno != EEXIST) {
-            ESP_LOGW(TAG, "mkdir %s/.int failed: %s", SD_MOUNT_POINT, strerror(errno));
-        }
-
+    /* LittleFS is the virtual SD backend on ESP32-S3. Never probe a physical
+     * SD card here: its absence must not trigger the SD-missing animation. */
+#ifdef BOARD_HAS_LITTLEFS
+    if(storage->littlefs_mounted) {
+        storage->sd_mounted = false;
         StorageEvent event = {.type = StorageEventTypeCardMount};
         furi_pubsub_publish(storage->pubsub, &event);
     } else {
         storage->sd_mounted = false;
-        ESP_LOGW(TAG, "SD card mount failed — continuing without SD");
-
         StorageEvent event = {.type = StorageEventTypeCardMountError};
         furi_pubsub_publish(storage->pubsub, &event);
     }
+#else
+    if(furi_hal_sd_mount()) {
+        storage->sd_mounted = true;
+        StorageEvent event = {.type = StorageEventTypeCardMount};
+        furi_pubsub_publish(storage->pubsub, &event);
+    } else {
+        storage->sd_mounted = false;
+        StorageEvent event = {.type = StorageEventTypeCardMountError};
+        furi_pubsub_publish(storage->pubsub, &event);
+    }
+#endif
 
     /* Register the storage record */
     furi_record_create(RECORD_STORAGE, storage);
