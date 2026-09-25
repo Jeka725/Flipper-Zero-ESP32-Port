@@ -534,6 +534,10 @@ static BubbleAnimation* animation_storage_load_animation(const char* name) {
             break;
         }
 
+        /* Files in /ext/dolphin are genuine Flipper .bm bitmaps, not the
+         * compressed icon blobs used by compiled-in assets_dolphin_internal. */
+        animation->frames_are_raw = true;
+
         if(!flipper_format_read_uint32(ff, "Active cycles", &u32value, 1)) { animation_storage_last_error = 3; break; } //-V779
         animation->active_cycles = u32value;
         if(!flipper_format_read_uint32(ff, "Frame rate", &u32value, 1)) { animation_storage_last_error = 3; break; }
