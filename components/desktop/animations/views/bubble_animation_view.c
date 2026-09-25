@@ -77,8 +77,17 @@ static void bubble_animation_draw_callback(Canvas* canvas, void* model_) {
     uint8_t width = icon_get_width(&animation->icon_animation);
     uint8_t height = icon_get_height(&animation->icon_animation);
     uint8_t y_offset = canvas_height(canvas) - height;
-    canvas_draw_bitmap(
-        canvas, 0, y_offset, width, height, animation->icon_animation.frames[index]);
+    if(animation->frames_are_raw) {
+        /* External LittleFS .bm files are already raw 1-bit bitmaps. Do not
+         * pass them through compress_icon_decode(), which interprets the
+         * Flipper compressed-icon header and prevents the frame from being
+         * drawn. */
+        canvas_draw_xbm(
+            canvas, 0, y_offset, width, height, animation->icon_animation.frames[index]);
+    } else {
+        canvas_draw_bitmap(
+            canvas, 0, y_offset, width, height, animation->icon_animation.frames[index]);
+    }
 
     const FrameBubble* bubble = model->current_bubble;
     if(bubble) {
