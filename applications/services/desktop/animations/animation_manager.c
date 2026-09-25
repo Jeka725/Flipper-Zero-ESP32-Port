@@ -230,13 +230,6 @@ static void animation_manager_start_new_idle(AnimationManager* animation_manager
 static bool animation_manager_check_blocking(AnimationManager* animation_manager) {
     furi_assert(animation_manager);
 
-    /*
-     * ESP32-S3 has no physical SD card. The storage service exposes the
-     * on-flash LittleFS volume through /ext, so upstream SD-missing/SD-bad
-     * blocking animations must never be selected on this target.
-     */
-    return false;
-
     StorageAnimation* blocking_animation = NULL;
     Storage* storage = furi_record_open(RECORD_STORAGE);
     FS_Error sd_status = storage_sd_status(storage);
@@ -257,7 +250,7 @@ static bool animation_manager_check_blocking(AnimationManager* animation_manager
             furi_assert(blocking_animation);
             animation_manager->blocking_shown_sd_ok = true;
         } else if(!animation_manager->blocking_shown_no_db) {
-            if(!storage_file_exists(storage, EXT_PATH("Manifest"))) {
+            if(!storage_file_exists(storage, EXT_PATH("dolphin/manifest.txt"))) {
                 blocking_animation = animation_storage_find_animation(NO_DB_ANIMATION_NAME);
                 furi_assert(blocking_animation);
                 animation_manager->blocking_shown_no_db = true;
