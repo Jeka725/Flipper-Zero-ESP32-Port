@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <sys/types.h>
 #include <sys/statvfs.h>
 #include <unistd.h>
 
@@ -110,6 +111,14 @@ static bool storage_ext_file_open(
         strcpy(mode, "rb");
     }
 
+    if(open_mode & FSOM_CREATE_NEW) {
+        struct stat st;
+        if(stat(full_path, &st) == 0) {
+            file->error_id = FSE_EXIST;
+            return false;
+        }
+    }
+
     ExtFile* data = calloc(1, sizeof(ExtFile));
     data->file = fopen(full_path, mode);
 
@@ -124,15 +133,6 @@ static bool storage_ext_file_open(
         return false;
     }
 
-    if(open_mode & FSOM_CREATE_NEW) {
-        struct stat st;
-        if(stat(full_path, &st) == 0) {
-            fclose(data->file);
-            free(data);
-            file->error_id = FSE_EXIST;
-            return false;
-        }
-    }
 
     storage_set_storage_file_data(file, data, storage);
     file->error_id = FSE_OK;
@@ -278,10 +278,8 @@ static bool storage_ext_dir_read(
         fileinfo->flags = 0;
         fileinfo->size = 0;
 
-        char path[256];
         char full_path[256];
-        ext_make_path(path, sizeof(path), "");
-        snprintf(full_path, sizeof(full_path), "%s/%s", path, entry->d_name);
+        snprintf(full_path, sizeof(full_path), INTERNAL_FS_BASE "/%s", entry->d_name);
 
         struct stat st;
         if(stat(full_path, &st) == 0) {
