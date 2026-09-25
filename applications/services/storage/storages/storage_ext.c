@@ -132,7 +132,6 @@ static bool storage_ext_file_open(
         return false;
     }
 
-
     storage_set_storage_file_data(file, data, storage);
     file->error_id = FSE_OK;
     return true;
@@ -149,7 +148,10 @@ static bool storage_ext_file_close(void* ctx, File* file) {
 }
 
 static uint16_t storage_ext_file_read(
-    void* ctx, File* file, void* buff, uint16_t bytes_to_read) {
+    void* ctx,
+    File* file,
+    void* buff,
+    uint16_t bytes_to_read) {
     StorageData* storage = ctx;
     ExtFile* data = storage_get_storage_file_data(file, storage);
     size_t n = data && data->file ? fread(buff, 1, bytes_to_read, data->file) : 0;
@@ -158,7 +160,10 @@ static uint16_t storage_ext_file_read(
 }
 
 static uint16_t storage_ext_file_write(
-    void* ctx, File* file, const void* buff, uint16_t bytes_to_write) {
+    void* ctx,
+    File* file,
+    const void* buff,
+    uint16_t bytes_to_write) {
     StorageData* storage = ctx;
     ExtFile* data = storage_get_storage_file_data(file, storage);
     size_t n = data && data->file ? fwrite(buff, 1, bytes_to_write, data->file) : 0;
@@ -167,7 +172,10 @@ static uint16_t storage_ext_file_write(
 }
 
 static bool storage_ext_file_seek(
-    void* ctx, File* file, uint32_t offset, bool from_start) {
+    void* ctx,
+    File* file,
+    uint32_t offset,
+    bool from_start) {
     StorageData* storage = ctx;
     ExtFile* data = storage_get_storage_file_data(file, storage);
     int rc = fseek(data->file, (long)offset, from_start ? SEEK_SET : SEEK_CUR);
@@ -278,12 +286,18 @@ static bool storage_ext_dir_read(
         fileinfo->size = 0;
 
         char full_path[256];
-        snprintf(full_path, sizeof(full_path), INTERNAL_FS_BASE "/%s", entry->d_name);
+        int path_len = snprintf(
+            full_path,
+            sizeof(full_path),
+            INTERNAL_FS_BASE "/%s",
+            entry->d_name);
 
-        struct stat st;
-        if(stat(full_path, &st) == 0) {
-            fileinfo->size = (uint64_t)st.st_size;
-            if(S_ISDIR(st.st_mode)) fileinfo->flags |= FSF_DIRECTORY;
+        if(path_len >= 0 && (size_t)path_len < sizeof(full_path)) {
+            struct stat st;
+            if(stat(full_path, &st) == 0) {
+                fileinfo->size = (uint64_t)st.st_size;
+                if(S_ISDIR(st.st_mode)) fileinfo->flags |= FSF_DIRECTORY;
+            }
         }
     }
 
