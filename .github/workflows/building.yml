@@ -73,6 +73,7 @@ jobs:
           STAGE="artifact_staging"
 
           rm -rf "$STAGE"
+          mkdir -p "$STAGE"
 
           source ~/esp/esp-idf/export.sh
 
