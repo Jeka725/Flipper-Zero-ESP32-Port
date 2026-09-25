@@ -4,7 +4,6 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <sys/statvfs.h>
 #include <unistd.h>
 
 #include <esp_littlefs.h>
@@ -342,11 +341,14 @@ static FS_Error storage_ext_common_fs_info(
     UNUSED(ctx);
     UNUSED(fs_path);
 
-    struct statvfs st;
-    if(statvfs(INTERNAL_FS_BASE, &st) != 0) return ext_errno_to_error();
+    size_t total = 0;
+    size_t used = 0;
+    if(esp_littlefs_info("littlefs", &total, &used) != ESP_OK) {
+        return FSE_INTERNAL;
+    }
 
-    if(total_space) *total_space = (uint64_t)st.f_blocks * st.f_frsize;
-    if(free_space) *free_space = (uint64_t)st.f_bavail * st.f_frsize;
+    if(total_space) *total_space = (uint64_t)total;
+    if(free_space) *free_space = (uint64_t)(total - used);
     return FSE_OK;
 }
 
