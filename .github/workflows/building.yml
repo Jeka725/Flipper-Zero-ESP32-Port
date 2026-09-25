@@ -36,9 +36,11 @@ jobs:
         uses: actions/cache@v6
         id: idf-cache
         with:
-          path: ~/esp/esp-idf
-          key: esp-idf-v5.4.1
-          restore-keys: esp-idf-v5.4.1
+          path: |
+            ~/esp/esp-idf
+            ~/.espressif
+          key: esp-idf-v5.4.1-ubuntu24-python3.12
+          restore-keys: esp-idf-v5.4.1-ubuntu24-python3.12
 
       - name: Clone ESP-IDF v5.4.1
         if: steps.idf-cache.outputs.cache-hit != 'true'
