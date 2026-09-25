@@ -89,9 +89,29 @@ jobs:
             0xBF0000 "$BUILD/ota_data_initial.bin" \
             0xC20000 "$BUILD/littlefs.bin"
 
+          # Trim only unused trailing 0xFF bytes. The previous workflow
+          # uploaded a 16 MiB image because the LittleFS partition reaches the
+          # end of flash; the unused tail is not required for flashing.
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path("artifact_staging/esp32s3_st7735.bin")
+          data = path.read_bytes()
+          original = len(data)
+          end = original
+          while end and data[end - 1] == 0xFF:
+              end -= 1
+          if end == 0:
+              raise SystemExit("Refusing to create an empty firmware image")
+          path.write_bytes(data[:end])
+          print(f"Original merged image: {original} bytes ({original / 1024 / 1024:.2f} MiB)")
+          print(f"Trimmed firmware image: {end} bytes ({end / 1024 / 1024:.2f} MiB)")
+          print(f"Removed trailing 0xFF padding: {original - end} bytes")
+          PY
+
           mv "$STAGE/${BOARD}.bin" "$STAGE/firmware.bin"
 
-          echo "=== Single firmware image ==="
+          echo "=== Compact single firmware image ==="
           stat -c '%n %s bytes' "$STAGE/firmware.bin"
           python -m esptool --chip "$CHIP" image_info "$STAGE/firmware.bin"
 
@@ -100,5 +120,6 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: flipper-esp32s3-st7735-firmware
-          path: artifact_staging/
+          path: artifact_staging/firmware.bin
+          if-no-files-found: error
           retention-days: 30
