@@ -26,6 +26,9 @@ typedef struct {
     const FrameBubble* const* frame_bubble_sequences;
     uint8_t frame_bubble_sequences_count;
     const Icon icon_animation;
+    /* true for external LittleFS .bm frames, which are raw XBM-style data;
+     * compiled-in Flipper assets remain compressed and use canvas decoding. */
+    bool frames_are_raw;
     const uint8_t* frame_order;
     uint8_t passive_frames;
     uint8_t active_frames;

@@ -69,7 +69,7 @@ void canvas_reset(Canvas* canvas) {
 
 void canvas_commit(Canvas* canvas) {
     furi_check(canvas);
-    u8g2_SendBuffer(&canvas->fb);
+    /* The ESP32 ST7735 port has its own RGB565 DMA flush below. */
 
     // Send framebuffer to physical display
     uint8_t* buf = canvas_get_buffer(canvas);
