@@ -48,14 +48,7 @@ jobs:
             https://github.com/espressif/esp-idf.git ~/esp/esp-idf
 
       - name: Cache ESP-IDF tools
-        uses: actions/cache@v6
-        id: idf-tools-cache
-        with:
-          path: ~/.espressif
-          key: esp-idf-tools-v5.4.1
-
-      - name: Install ESP-IDF tools
-        if: steps.idf-tools-cache.outputs.cache-hit != 'true'
+        if: steps.idf-cache.outputs.cache-hit != 'true'
         run: |
           ~/esp/esp-idf/install.sh all
 
@@ -72,30 +65,33 @@ jobs:
 
       - name: Package firmware
         run: |
+          BOARD="esp32s3_st7735"
+          CHIP="esp32s3"
           BUILD="build_s3_st7735"
           STAGE="artifact_staging"
 
           rm -rf "$STAGE"
           mkdir -p "$STAGE/wokwi"
 
-          # Keep every flash image at its real generated size.
-          # The OTA/LittleFS partition layout intentionally spans the 16 MB
-          # address space, so one contiguous merged binary necessarily contains
-          # the unused address gaps. Do not package that padded image.
-          cp "$BUILD/bootloader/bootloader.bin" "$STAGE/bootloader.bin"
-          cp "$BUILD/partition_table/partition-table.bin" "$STAGE/partition-table.bin"
-          cp "$BUILD/furi_esp32.bin" "$STAGE/furi_esp32.bin"
-          cp "$BUILD/ota_data_initial.bin" "$STAGE/ota_data_initial.bin"
-          cp "$BUILD/littlefs.bin" "$STAGE/littlefs.bin"
-          cp "$BUILD/flash_args" "$STAGE/flash_args"
+          source ~/esp/esp-idf/export.sh
 
-          echo "=== Real image sizes ==="
-          stat -c '%n %s bytes' \
-            "$STAGE/bootloader.bin" \
-            "$STAGE/partition-table.bin" \
-            "$STAGE/furi_esp32.bin" \
-            "$STAGE/ota_data_initial.bin" \
-            "$STAGE/littlefs.bin"
+          # Produce exactly one flashable firmware.bin.
+          # Do not pass --flash_size: merge_bin stops at the highest
+          # supplied image end and does not add an independent full-flash tail.
+          # All required flash offsets are preserved in the merged image.
+          python -m esptool --chip "$CHIP" merge_bin \
+            -o "$STAGE/${BOARD}.bin" \
+            0x0 "$BUILD/bootloader/bootloader.bin" \
+            0x8000 "$BUILD/partition_table/partition-table.bin" \
+            0x10000 "$BUILD/furi_esp32.bin" \
+            0xBF0000 "$BUILD/ota_data_initial.bin" \
+            0xC20000 "$BUILD/littlefs.bin"
+
+          mv "$STAGE/${BOARD}.bin" "$STAGE/firmware.bin"
+
+          echo "=== Single firmware image ==="
+          stat -c '%n %s bytes' "$STAGE/firmware.bin"
+          python -m esptool --chip "$CHIP" image_info "$STAGE/firmware.bin"
 
           cp wokwi/diagram.json "$STAGE/wokwi/diagram.json"
           cp wokwi/wokwi.toml "$STAGE/wokwi/wokwi.toml"
