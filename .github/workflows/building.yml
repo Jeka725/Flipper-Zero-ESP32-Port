@@ -73,7 +73,6 @@ jobs:
           STAGE="artifact_staging"
 
           rm -rf "$STAGE"
-          mkdir -p "$STAGE/wokwi"
 
           source ~/esp/esp-idf/export.sh
 
@@ -95,12 +94,8 @@ jobs:
           stat -c '%n %s bytes' "$STAGE/firmware.bin"
           python -m esptool --chip "$CHIP" image_info "$STAGE/firmware.bin"
 
-          cp wokwi/diagram.json "$STAGE/wokwi/diagram.json"
-          cp wokwi/wokwi.toml "$STAGE/wokwi/wokwi.toml"
-          cp "$BUILD/furi_esp32.bin" "$STAGE/wokwi/furi_esp32.bin"
-          cp "$BUILD/littlefs.bin" "$STAGE/wokwi/littlefs.bin"
 
-      - name: Upload firmware and Wokwi project
+      - name: Upload single firmware.bin
         uses: actions/upload-artifact@v7
         with:
           name: flipper-esp32s3-st7735-firmware
