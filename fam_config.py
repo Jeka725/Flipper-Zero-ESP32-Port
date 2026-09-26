@@ -110,6 +110,43 @@ if _board in _boards_without_subghz:
 if _board in _boards_without_nrf24:
     APPS = [a for a in APPS if a != "nrf24"]
 
+# The ST7735S build is intended to be a compact handheld UI, not a full
+# multimedia/JavaScript distribution. Keep the core services, Wi-Fi/BLE and
+# the bundled games, while dropping optional payloads that are not used by
+# this hardware. Dependencies of retained apps are still restored by FAM.
+if _board == "esp32s3_st7735":
+    _optional_st7735_apps = {
+        "streaming",
+        "bad_usb",
+        "example_apps_data",
+        "example_apps_assets",
+        "example_number_input",
+        "js_app",
+        "js_event_loop",
+        "js_gui",
+        "js_gui__loading",
+        "js_gui__empty_screen",
+        "js_gui__submenu",
+        "js_gui__text_input",
+        "js_gui__number_input",
+        "js_gui__button_panel",
+        "js_gui__popup",
+        "js_gui__button_menu",
+        "js_gui__menu",
+        "js_gui__vi_list",
+        "js_gui__byte_input",
+        "js_gui__text_box",
+        "js_gui__dialog",
+        "js_gui__file_picker",
+        "js_gui__widget",
+        "js_gui__icon",
+        "js_notification",
+        "js_math",
+        "js_storage",
+        "js_blebeacon",
+    }
+    APPS = [a for a in APPS if a not in _optional_st7735_apps]
+
 # NOTE: cli_vcp and dolphin look like easy RAM wins (~4KB stack each) but both
 # are hard-wired into the desktop service: desktop.c calls cli_vcp_enable/disable
 # directly (USB-Storage/qFlipper toggles) and lists "dolphin" in its `requires`
