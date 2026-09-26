@@ -107,6 +107,14 @@ jobs:
           cp "$STAGE/firmware.bin" "$STAGE/wokwi/firmware.bin"
           cp "$BUILD/littlefs.bin" "$STAGE/wokwi/littlefs.bin"
 
+      - name: Upload Wokwi test bundle
+        uses: actions/upload-artifact@v7
+        with:
+          name: flipper-esp32s3-st7735-wokwi
+          path: artifact_staging/wokwi
+          retention-days: 30
+          if-no-files-found: error
+
       - name: Upload firmware BIN
         uses: actions/upload-artifact@v7
         with:
