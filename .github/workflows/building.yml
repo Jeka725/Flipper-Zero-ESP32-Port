@@ -81,18 +81,18 @@ jobs:
           # Keep one flashable image, but remove only a trailing run of 0xFF
           # bytes. Do not truncate any real bootloader/app/OTA/LittleFS data.
           python - <<'PY'
-from pathlib import Path
-p = Path("artifact_staging/firmware.bin")
-data = p.read_bytes()
-original = len(data)
-trimmed = data.rstrip(b"\xff")
-if not trimmed:
-    raise SystemExit("Refusing to create an empty firmware image")
-p.write_bytes(trimmed)
-print(f"firmware.bin: {original} -> {len(trimmed)} bytes")
-if len(trimmed) > 0x1000000:
-    raise SystemExit("Firmware image exceeds 16 MiB flash")
-PY
+          from pathlib import Path
+          p = Path("artifact_staging/firmware.bin")
+          data = p.read_bytes()
+          original = len(data)
+          trimmed = data.rstrip(b"\xff")
+          if not trimmed:
+              raise SystemExit("Refusing to create an empty firmware image")
+          p.write_bytes(trimmed)
+          print(f"firmware.bin: {original} -> {len(trimmed)} bytes")
+          if len(trimmed) > 0x1000000:
+              raise SystemExit("Firmware image exceeds 16 MiB flash")
+          PY
 
           python -m esptool --chip esp32s3 image_info "$STAGE/firmware.bin"
 
