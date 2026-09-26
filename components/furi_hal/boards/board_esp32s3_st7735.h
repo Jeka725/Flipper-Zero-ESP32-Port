@@ -1,10 +1,10 @@
 /**
  * @file board_esp32s3_st7735.h
- * ESP32-S3 N16R8 + ST7735S 1.8" 128x160 + five-button board.
+ * ESP32-S3 N16R8 + ST7735S 1.8" 128x160 + four-button board.
  *
  * Fixed hardware configuration:
  *   LCD SCK=GPIO5, MOSI=GPIO6, DC=GPIO7, RST=GPIO15, CS=GPIO16, BL=GPIO4
- *   Buttons UP=GPIO11, DOWN=GPIO9, LEFT=GPIO12, RIGHT=GPIO13, OK=GPIO14
+ *   Buttons UP=GPIO9, DOWN=GPIO11, LEFT=GPIO12, RIGHT=GPIO13
  *
  * The board has Wi-Fi and BLE only. No SD/CC1101/NRF24/NFC/RFID/IR/touch/
  * vibro/speaker hardware is present.
@@ -19,7 +19,7 @@
 #define BOARD_LITTLEFS_PARTITION "littlefs"
 #define BOARD_TARGET      "esp32s3"
 
-/* Five active-low buttons with internal pull-ups. */
+/* Four active-low buttons with internal pull-ups. */
 #define BOARD_PIN_BUTTON_UP       9
 #define BOARD_PIN_BUTTON_DOWN    11
 #define BOARD_PIN_BUTTON_LEFT    12
