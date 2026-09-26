@@ -57,6 +57,7 @@ jobs:
       - name: Verify ESP-IDF environment
         run: |
           source ~/esp/esp-idf/export.sh
+          python -m pip install --disable-pip-version-check Pillow
           echo "IDF_PATH=$IDF_PATH"
           idf.py --version
 
