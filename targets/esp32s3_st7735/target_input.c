@@ -18,7 +18,7 @@
 
 #define TAG "Input5Button"
 #define INPUT_DEBOUNCE_POLLS 3U
-#define INPUT_BACK_HOLD_MS 1000U
+#define INPUT_BACK_HOLD_MS 2000U
 
 typedef struct {
     gpio_num_t pin;
@@ -99,16 +99,9 @@ void target_input_poll(FuriPubSub* pubsub, uint32_t* sequence_counter) {
         if(b->stable == b->raw) {
             if(b->stable && !b->back_sent &&
                (now - b->pressed_at >= back_hold_ticks)) {
-
                 b->back_sent = true;
 
-                /*
-                 * ViewDispatcher requires a complementary Press before it
-                 * accepts a Short/Long event. A lone Back/Short is discarded
-                 * as a non-complementary event. Emit a complete logical key
-                 * sequence at the 2-second threshold so Back is guaranteed to
-                 * reach the normal navigation path.
-                 */
+                /* Emit a complete logical Back sequence for ViewDispatcher. */
                 publish(pubsub, InputKeyBack, InputTypePress, sequence_counter);
                 publish(pubsub, InputKeyBack, InputTypeShort, sequence_counter);
                 publish(pubsub, InputKeyBack, InputTypeRelease, sequence_counter);
@@ -121,17 +114,13 @@ void target_input_poll(FuriPubSub* pubsub, uint32_t* sequence_counter) {
         b->stable = b->raw;
 
         if(b->stable) {
-            /* Physical press. */
             b->pressed_at = now;
             b->back_sent = false;
             publish(pubsub, b->key, InputTypePress, sequence_counter);
         } else {
-            /* Physical release. */
             if(!b->back_sent) {
-                /* Normal click. */
                 publish(pubsub, b->key, InputTypeShort, sequence_counter);
             }
-
             publish(pubsub, b->key, InputTypeRelease, sequence_counter);
             b->back_sent = false;
         }
