@@ -94,7 +94,24 @@ p.write_bytes(trimmed)
 print(f"firmware.bin: {len(data)} -> {len(trimmed)} bytes")
 PY
 
-          python -m esptool --chip esp32s3 image_info "$STAGE/firmware.bin"
+          # A raw merged image is not an ESP application image by itself:
+          # image_info only inspects the first image at 0x0. Validate the
+          # actual component images and the merged raw file separately.
+          python -m esptool --chip esp32s3 image_info "$BUILD/bootloader/bootloader.bin"
+          python -m esptool --chip esp32s3 image_info "$BUILD/furi_esp32.bin"
+
+          python - <<'PY'
+from pathlib import Path
+p = Path("artifact_staging/firmware.bin")
+data = p.read_bytes()
+if len(data) > 0x1000000:
+    raise SystemExit(f"firmware.bin exceeds 16 MiB: {len(data)} bytes")
+if len(data) < 0x10000:
+    raise SystemExit(f"firmware.bin is unexpectedly small: {len(data)} bytes")
+if data[:1] != b"\xe9":
+    raise SystemExit(f"invalid bootloader magic: 0x{data[0]:02x}")
+print(f"validated merged firmware.bin: {len(data)} bytes ({len(data)/1024/1024:.2f} MiB)")
+PY
 
           # Keep the Wokwi copy identical to the downloadable firmware.
 
