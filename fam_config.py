@@ -33,8 +33,7 @@ APPS = [
     "desktop",
     "archive",
 
-    # Original games already present in this port. The custom replacement
-    # application/games implementation is intentionally not built.
+    # Original games already present in this port.
     "snake_game",
     "tetris",
     "pong",
@@ -43,62 +42,78 @@ APPS = [
 
     "about",
     "bt_settings",
+    "example_apps_data",
+    "example_apps_assets",
+    "example_number_input",
     "clock",
+    "bad_usb",
+    "subghz",
+    "cli_subghz",
+    "subghz_load_dangerous_settings",
     "passport",
-    "wlan",
-    "wifi",
-    "ota_updater",
     "nfc",
     "infrared",
     "lfrfid",
+    "wlan",
+    "wifi",
+    "ota_updater",
     "streaming",
     "nrf24",
     "ble_spam",
+    "js_app",
+    "js_event_loop",
+    "js_gui",
+    "js_gui__loading",
+    "js_gui__empty_screen",
+    "js_gui__submenu",
+    "js_gui__text_input",
+    "js_gui__number_input",
+    "js_gui__button_panel",
+    "js_gui__popup",
+    "js_gui__button_menu",
+    "js_gui__menu",
+    "js_gui__vi_list",
+    "js_gui__byte_input",
+    "js_gui__text_box",
+    "js_gui__dialog",
+    "js_gui__file_picker",
+    "js_gui__widget",
+    "js_gui__icon",
+    "js_notification",
+    "js_math",
+    "js_storage",
+    "js_subghz",
+    "js_infrared",
+    "js_blebeacon",
 ]
 
 _board = os.environ.get("FLIPPER_BOARD", "")
+_boards_without_nfc = {"waveshare_c6", "waveshare_c6_1.9", "waveshare_c6_1.47", "esp32s3_st7735"}
+_boards_without_ir = {"waveshare_c6", "waveshare_c6_1.9", "waveshare_c6_1.47", "esp32s3_st7735"}
 
-_boards_without_nfc = {
-    "waveshare_c6",
-    "waveshare_c6_1.9",
-    "waveshare_c6_1.47",
-    "esp32s3_st7735",
-}
-_boards_without_ir = {
-    "waveshare_c6",
-    "waveshare_c6_1.9",
-    "waveshare_c6_1.47",
-    "esp32s3_st7735",
-}
-_boards_without_subghz = {"waveshare_c6_1.47", "esp32s3_st7735"}
-_boards_without_nrf24 = {
-    "waveshare_c6",
-    "waveshare_c6_1.9",
-    "waveshare_c6_1.47",
-    "esp32s3_st7735",
-}
-_boards_without_wolf3d = {
-    "waveshare_c6",
-    "waveshare_c6_1.9",
-    "waveshare_c6_1.47",
-    "esp32s3_st7735",
-}
+# Original Doom/Wolf3D remain in the source tree but are not enabled for the
+# 128x160 ST7735S target because their original renderers require the larger
+# display/audio configuration.
+_boards_without_wolf3d = {"waveshare_c6", "waveshare_c6_1.9", "waveshare_c6_1.47", "esp32s3_st7735"}
 
 if _board in _boards_without_nfc:
     APPS = [a for a in APPS if a != "nfc"]
 
+_boards_without_subghz = {"waveshare_c6_1.47", "esp32s3_st7735"}
+
 if _board in _boards_without_ir:
-    APPS = [a for a in APPS if a != "infrared"]
+    APPS = [a for a in APPS if a not in ("infrared", "js_infrared")]
 
 if _board in _boards_without_subghz:
-    APPS = [a for a in APPS if a != "subghz"]
+    APPS = [a for a in APPS if a not in ("subghz", "cli_subghz", "subghz_load_dangerous_settings", "js_subghz")]
+
+_boards_without_nrf24 = {"waveshare_c6", "waveshare_c6_1.9", "waveshare_c6_1.47", "esp32s3_st7735"}
 
 if _board in _boards_without_nrf24:
     APPS = [a for a in APPS if a != "nrf24"]
 
-# Keep the compact ST7735S build focused on the original core UI, wireless
-# features and original games. Heavy/unused multimedia and JS payloads are
-# intentionally excluded for this 128x160 target.
+# The ST7735S build keeps the original core services, Wi-Fi/BLE and the
+# original games, while dropping optional payloads not used on this hardware.
 if _board == "esp32s3_st7735":
     _optional_st7735_apps = {
         "streaming",
@@ -128,11 +143,13 @@ if _board == "esp32s3_st7735":
         "js_notification",
         "js_math",
         "js_storage",
-        "js_subghz",
-        "js_infrared",
         "js_blebeacon",
     }
     APPS = [a for a in APPS if a not in _optional_st7735_apps]
+
+# cli_vcp and dolphin stay because desktop depends on them for qFlipper /
+# USB-Storage integration. TinyUSB composite is installed lazily so the
+# USB-Serial-JTAG bridge remains available for esptool.
 
 EXTRA_EXT_APPS = []
 TARGET_HW = 32
