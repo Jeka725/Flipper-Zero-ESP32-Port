@@ -1,8 +1,8 @@
 App(
     appid="games",
     name="Games",
-    apptype=FlipperAppType.MENUEXTERNAL,
+    apptype=FlipperAppType.APP,
     entry_point="games_app",
-    stack_size=4 * 1024,
-    fap_category="Games",
+    stack_size=6 * 1024,
+    requires=["gui"],
 )
