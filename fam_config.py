@@ -34,9 +34,9 @@ APPS = [
     "archive",
 
     # Original games already present in this port.
-    "snake_game",
+    "snake",
     "tetris",
-    "pong",
+    "flipper_pong",
     "game15",
     "snake20",
 
