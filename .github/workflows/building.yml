@@ -83,8 +83,8 @@ jobs:
           mkdir -p "$STAGE"
 
           source ~/esp/esp-idf/export.sh
-          python -m esptool --chip "$CHIP" merge_bin \
-            --flash_size "$FLASH_SIZE" \
+          python -m esptool --chip "$CHIP" merge-bin \
+            --flash-size "$FLASH_SIZE" \
             -o "$STAGE/${BOARD}.bin" \
             0x0 "$BUILD/bootloader/bootloader.bin" \
             0x8000 "$BUILD/partition_table/partition-table.bin" \
@@ -101,13 +101,13 @@ jobs:
 
           echo "=== Full 16 MiB compression-safe firmware image ==="
           stat -c '%n %s bytes' "$STAGE/firmware.bin"
-          python -m esptool --chip "$CHIP" image_info "$STAGE/firmware.bin"
+          python -m esptool --chip "$CHIP" image-info "$STAGE/firmware.bin"
 
           # Verify the exact command used by common ESP32 flashers.
           # esptool enables compressed transfer by default; --compress is
           # explicit here so the generated flash instructions match the
           # intended fast/sparse transfer mode.
-          python -m esptool --chip "$CHIP" write_flash --help | grep -q -- "--compress"
+          python -m esptool --chip "$CHIP" write-flash --help | grep -q -- "--no-compress"
 
           cat > "$STAGE/flash-esp32s3-compressed.txt" <<'EOF'
 ESP32-S3 N16R8 — single-image flashing
