@@ -230,43 +230,23 @@ static void animation_manager_start_new_idle(AnimationManager* animation_manager
 static bool animation_manager_check_blocking(AnimationManager* animation_manager) {
     furi_assert(animation_manager);
 
+    /*
+     * ESP32-S3 ST7735S has no physical SD card. The EXT storage backend is
+     * LittleFS in internal flash and reports FSE_OK through storage_sd_status().
+     * Do not run the original SD mount/DB/URL blocking sequence here: it would
+     * show L0_SdOk/L0_NoDb/L0_Url and can leave the animation manager blocked,
+     * even though the internal animation files are already available.
+     *
+     * Real notification animations (for example level-up) are still handled
+     * below.
+     */
     StorageAnimation* blocking_animation = NULL;
-    Storage* storage = furi_record_open(RECORD_STORAGE);
-    FS_Error sd_status = storage_sd_status(storage);
-
-    if(sd_status == FSE_INTERNAL) {
-        if(!animation_manager->blocking_shown_sd_bad) {
-            blocking_animation = animation_storage_find_animation(BAD_SD_ANIMATION_NAME);
-            furi_assert(blocking_animation);
-            animation_manager->blocking_shown_sd_bad = true;
-        }
-    } else if(sd_status == FSE_NOT_READY) {
-        animation_manager->blocking_shown_sd_bad = false;
-        animation_manager->blocking_shown_sd_ok = false;
-        animation_manager->blocking_shown_no_db = false;
-    } else if(sd_status == FSE_OK) {
-        if(!animation_manager->blocking_shown_sd_ok) {
-            blocking_animation = animation_storage_find_animation(SD_OK_ANIMATION_NAME);
-            furi_assert(blocking_animation);
-            animation_manager->blocking_shown_sd_ok = true;
-        } else if(!animation_manager->blocking_shown_no_db) {
-            if(!storage_file_exists(storage, EXT_PATH("dolphin/manifest.txt"))) {
-                blocking_animation = animation_storage_find_animation(NO_DB_ANIMATION_NAME);
-                furi_assert(blocking_animation);
-                animation_manager->blocking_shown_no_db = true;
-                animation_manager->blocking_shown_url = true;
-            }
-        } else if(animation_manager->blocking_shown_url) {
-            blocking_animation = animation_storage_find_animation(URL_ANIMATION_NAME);
-            furi_assert(blocking_animation);
-            animation_manager->blocking_shown_url = false;
-        }
-    }
 
     Dolphin* dolphin = furi_record_open(RECORD_DOLPHIN);
     DolphinStats stats = dolphin_stats(dolphin);
     furi_record_close(RECORD_DOLPHIN);
-    if(!blocking_animation && stats.level_up_is_pending) {
+
+    if(stats.level_up_is_pending) {
         blocking_animation = animation_storage_find_animation(NEW_MAIL_ANIMATION_NAME);
         furi_check(blocking_animation);
         animation_manager->levelup_pending = true;
@@ -275,11 +255,8 @@ static bool animation_manager_check_blocking(AnimationManager* animation_manager
     if(blocking_animation) {
         furi_timer_stop(animation_manager->idle_animation_timer);
         animation_manager_replace_current_animation(animation_manager, blocking_animation);
-        /* no timer starting because this is blocking animation */
         animation_manager->state = AnimationManagerStateBlocked;
     }
-
-    furi_record_close(RECORD_STORAGE);
 
     return !!blocking_animation;
 }
