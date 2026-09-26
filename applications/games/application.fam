@@ -1,8 +1,0 @@
-App(
-    appid="games",
-    name="Games",
-    apptype=FlipperAppType.APP,
-    entry_point="games_app",
-    stack_size=6 * 1024,
-    requires=["gui"],
-)
