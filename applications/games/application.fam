@@ -1,0 +1,10 @@
+App(
+    appid="games",
+    name="Games",
+    apptype=FlipperAppType.SYSTEM,
+    entry_point="games_app",
+    requires=["gui", "loader"],
+    stack_size=2 * 1024,
+    order=25,
+    fap_category="Games",
+)
