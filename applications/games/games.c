@@ -1,26 +1,379 @@
-#include <stdio.h>
 #include <furi.h>
+#include <furi_hal.h>
 #include <gui/gui.h>
-#include <gui/view.h>
-#include <gui/view_dispatcher.h>
-#include <gui/modules/submenu.h>
+#include <gui/view_port.h>
 #include <input/input.h>
 #include <stdlib.h>
 #include <string.h>
+
+#define GAMES_COUNT 4
 #define CELL 4
-#define COLS 32
-#define ROWS 13
-typedef enum { GM_MENU, GM_SNAKE, GM_PONG, GM_DODGE, GM_TETRIS } GameMode;
-typedef struct { Gui* gui; ViewDispatcher* vd; Submenu* menu; View* game; GameMode mode; bool running; uint32_t score,tick; int sx[96],sy[96],slen,sdx,sdy,foodx,foody; int paddle_y,ball_x,ball_y,ball_dx,ball_dy; int player_x,rock_x,rock_y; uint16_t board[13]; int tx,ty; } GamesApp;
-static void reset_game(GamesApp* a){a->score=0;a->tick=0;a->running=true;if(a->mode==GM_SNAKE){a->slen=3;a->sx[0]=10;a->sy[0]=5;a->sx[1]=9;a->sy[1]=5;a->sx[2]=8;a->sy[2]=5;a->sdx=1;a->sdy=0;a->foodx=20;a->foody=8;}else if(a->mode==GM_PONG){a->paddle_y=25;a->ball_x=64;a->ball_y=32;a->ball_dx=2;a->ball_dy=1;}else if(a->mode==GM_DODGE){a->player_x=60;a->rock_x=35;a->rock_y=12;}else{memset(a->board,0,sizeof(a->board));a->tx=4;a->ty=0;}}
-static bool snake_hit(GamesApp* a,int x,int y){if(x<0||x>=COLS||y<0||y>=ROWS)return true;for(int i=0;i<a->slen;i++)if(a->sx[i]==x&&a->sy[i]==y)return true;return false;}
-static void snake_step(GamesApp* a){int nx=a->sx[0]+a->sdx,ny=a->sy[0]+a->sdy;if(snake_hit(a,nx,ny)){reset_game(a);return;}for(int i=a->slen-1;i>0;i--){a->sx[i]=a->sx[i-1];a->sy[i]=a->sy[i-1];}a->sx[0]=nx;a->sy[0]=ny;if(nx==a->foodx&&ny==a->foody){if(a->slen<95)a->slen++;a->score++;do{a->foodx=rand()%COLS;a->foody=rand()%ROWS;}while(snake_hit(a,a->foodx,a->foody));}}
-static void pong_step(GamesApp* a){a->ball_x+=a->ball_dx;a->ball_y+=a->ball_dy;if(a->ball_y<12||a->ball_y>61)a->ball_dy=-a->ball_dy;if(a->ball_x<7&&a->ball_y>=a->paddle_y&&a->ball_y<=a->paddle_y+15){a->ball_dx=2;a->score++;}if(a->ball_x>126)a->ball_dx=-2;if(a->ball_x<0)reset_game(a);}
-static void dodge_step(GamesApp* a){a->rock_y+=3;if(a->rock_y>64){a->rock_y=12;a->rock_x=5+rand()%116;a->score++;}if(a->rock_y+7>=54&&a->rock_x<a->player_x+10&&a->rock_x+7>a->player_x)reset_game(a);}
-static void tetris_step(GamesApp* a){if(a->ty<11&&!(a->board[a->ty+2]&(1u<<a->tx))&&!(a->board[a->ty+2]&(1u<<(a->tx+1))))a->ty++;else{if(a->ty<12){a->board[a->ty]|=(1u<<a->tx)|(1u<<(a->tx+1));a->board[a->ty+1]|=(1u<<a->tx)|(1u<<(a->tx+1));}for(int y=12;y>=0;y--){if(a->board[y]==0x03FFu){for(int r=y;r>0;r--)a->board[r]=a->board[r-1];a->board[0]=0;y++;a->score+=10;}}a->score++;a->tx=3+rand()%4;a->ty=0;if(a->board[1]&(1u<<a->tx))reset_game(a);}}
-static void draw_game(Canvas* c,void* ctx){GamesApp* a=ctx;canvas_clear(c);char b[20];snprintf(b,sizeof(b),"%lu",(unsigned long)a->score);if(a->mode==GM_SNAKE){canvas_draw_str(c,2,8,"SNAKE");canvas_draw_str(c,108,8,b);for(int i=0;i<a->slen;i++)canvas_draw_box(c,a->sx[i]*CELL,12+a->sy[i]*CELL,CELL,CELL);canvas_draw_box(c,a->foodx*CELL,12+a->foody*CELL,CELL,CELL);}else if(a->mode==GM_PONG){canvas_draw_str(c,2,8,"PONG");canvas_draw_str(c,108,8,b);canvas_draw_box(c,2,a->paddle_y,3,15);canvas_draw_disc(c,a->ball_x,a->ball_y,2);}else if(a->mode==GM_DODGE){canvas_draw_str(c,2,8,"DODGE");canvas_draw_str(c,108,8,b);canvas_draw_box(c,a->player_x,54,10,6);canvas_draw_box(c,a->rock_x,a->rock_y,7,7);}else{canvas_draw_str(c,2,8,"TETRIS");canvas_draw_str(c,108,8,b);for(int y=0;y<13;y++)for(int x=0;x<10;x++)if(a->board[y]&(1u<<x))canvas_draw_box(c,24+x*4,12+y*4,4,4);canvas_draw_box(c,24+a->tx*4,12+a->ty*4,4,4);canvas_draw_box(c,28+a->tx*4,12+a->ty*4,4,4);canvas_draw_box(c,24+a->tx*4,16+a->ty*4,4,4);canvas_draw_box(c,28+a->tx*4,16+a->ty*4,4,4);}}
-static void tick_game(void* ctx){GamesApp* a=ctx;if(!a->running)return;a->tick++;if(a->mode==GM_SNAKE&&a->tick%4==0)snake_step(a);else if(a->mode==GM_PONG)pong_step(a);else if(a->mode==GM_DODGE)dodge_step(a);else if(a->mode==GM_TETRIS&&a->tick%4==0)tetris_step(a);view_dispatcher_switch_to_view(a->vd, 1);}
-static bool input_game(InputEvent* e,void* ctx){GamesApp* a=ctx;if(e->type!=InputTypePress&&e->type!=InputTypeRepeat)return false;if(e->key==InputKeyBack){a->running=false;view_dispatcher_switch_to_view(a->vd,0);return true;}if(a->mode==GM_SNAKE){if(e->key==InputKeyUp&&a->sdy==0){a->sdx=0;a->sdy=-1;}else if(e->key==InputKeyDown&&a->sdy==0){a->sdx=0;a->sdy=1;}else if(e->key==InputKeyLeft&&a->sdx==0){a->sdx=-1;a->sdy=0;}else if(e->key==InputKeyRight&&a->sdx==0){a->sdx=1;a->sdy=0;}}else if(a->mode==GM_PONG){if(e->key==InputKeyUp)a->paddle_y-=4;if(e->key==InputKeyDown)a->paddle_y+=4;if(a->paddle_y<12)a->paddle_y=12;if(a->paddle_y>48)a->paddle_y=48;}else if(a->mode==GM_DODGE){if(e->key==InputKeyLeft)a->player_x-=5;if(e->key==InputKeyRight)a->player_x+=5;if(a->player_x<2)a->player_x=2;if(a->player_x>116)a->player_x=116;}else{if(e->key==InputKeyLeft&&a->tx>0)a->tx--;if(e->key==InputKeyRight&&a->tx<8)a->tx++;if(e->key==InputKeyDown)tetris_step(a);}return true;}
-static void menu_cb(void* ctx,uint32_t index){GamesApp* a=ctx;a->mode=(GameMode)(index+1);reset_game(a);view_dispatcher_switch_to_view(a->vd,1);}
-static bool nav_back(void* ctx){GamesApp* a=ctx;view_dispatcher_stop(a->vd);return true;}
-int32_t games_app(void* p){UNUSED(p);GamesApp* a=malloc(sizeof(GamesApp));memset(a,0,sizeof(GamesApp));a->gui=furi_record_open(RECORD_GUI);a->vd=view_dispatcher_alloc();a->menu=submenu_alloc();a->game=view_alloc();submenu_set_header(a->menu,"Games");submenu_add_item(a->menu,"Snake",0,menu_cb,a);submenu_add_item(a->menu,"Pong",1,menu_cb,a);submenu_add_item(a->menu,"Dodge",2,menu_cb,a);submenu_add_item(a->menu,"Tetris",3,menu_cb,a);view_set_draw_callback(a->game,draw_game);view_set_input_callback(a->game,input_game);view_set_context(a->game,a);view_dispatcher_set_event_callback_context(a->vd,a);view_dispatcher_set_tick_event_callback(a->vd,tick_game,50);view_dispatcher_set_navigation_event_callback(a->vd,nav_back);view_dispatcher_add_view(a->vd,0,submenu_get_view(a->menu));view_dispatcher_add_view(a->vd,1,a->game);view_dispatcher_attach_to_gui(a->vd,a->gui,ViewDispatcherTypeFullscreen);view_dispatcher_switch_to_view(a->vd,0);view_dispatcher_run(a->vd);view_dispatcher_remove_view(a->vd,0);view_dispatcher_remove_view(a->vd,1);view_dispatcher_free(a->vd);view_free(a->game);submenu_free(a->menu);furi_record_close(RECORD_GUI);free(a);return 0;}
+#define SNAKE_COLS 32
+#define SNAKE_ROWS 13
+
+typedef enum {
+    GameMenu,
+    GameSnake,
+    GamePong,
+    GameDodge,
+    GameTetris,
+} GameMode;
+
+typedef struct {
+    Gui* gui;
+    ViewPort* viewport;
+    FuriTimer* timer;
+    FuriSemaphore* exit_sem;
+    volatile uint32_t ticks;
+    uint32_t drawn_ticks;
+    GameMode mode;
+    uint8_t menu_index;
+    bool exit_requested;
+    uint32_t score;
+
+    int sx[96];
+    int sy[96];
+    int slen;
+    int sdx;
+    int sdy;
+    int foodx;
+    int foody;
+
+    int paddle_y;
+    int ball_x;
+    int ball_y;
+    int ball_dx;
+    int ball_dy;
+
+    int player_x;
+    int rock_x;
+    int rock_y;
+
+    uint16_t board[13];
+    int tx;
+    int ty;
+} GamesApp;
+
+static const char* const game_names[GAMES_COUNT] = {
+    "Snake",
+    "Pong",
+    "Dodge",
+    "Tetris",
+};
+
+static void game_reset(GamesApp* app) {
+    app->score = 0;
+    app->drawn_ticks = app->ticks;
+
+    if(app->mode == GameSnake) {
+        app->slen = 3;
+        app->sx[0] = 10;
+        app->sy[0] = 5;
+        app->sx[1] = 9;
+        app->sy[1] = 5;
+        app->sx[2] = 8;
+        app->sy[2] = 5;
+        app->sdx = 1;
+        app->sdy = 0;
+        app->foodx = 20;
+        app->foody = 8;
+    } else if(app->mode == GamePong) {
+        app->paddle_y = 25;
+        app->ball_x = 64;
+        app->ball_y = 32;
+        app->ball_dx = 2;
+        app->ball_dy = 1;
+    } else if(app->mode == GameDodge) {
+        app->player_x = 60;
+        app->rock_x = 35;
+        app->rock_y = 12;
+    } else if(app->mode == GameTetris) {
+        memset(app->board, 0, sizeof(app->board));
+        app->tx = 4;
+        app->ty = 0;
+    }
+}
+
+static bool snake_hit(GamesApp* app, int x, int y) {
+    if(x < 0 || x >= SNAKE_COLS || y < 0 || y >= SNAKE_ROWS) return true;
+    for(int i = 0; i < app->slen; i++) {
+        if(app->sx[i] == x && app->sy[i] == y) return true;
+    }
+    return false;
+}
+
+static void snake_step(GamesApp* app) {
+    int nx = app->sx[0] + app->sdx;
+    int ny = app->sy[0] + app->sdy;
+
+    if(snake_hit(app, nx, ny)) {
+        game_reset(app);
+        return;
+    }
+
+    for(int i = app->slen - 1; i > 0; i--) {
+        app->sx[i] = app->sx[i - 1];
+        app->sy[i] = app->sy[i - 1];
+    }
+    app->sx[0] = nx;
+    app->sy[0] = ny;
+
+    if(nx == app->foodx && ny == app->foody) {
+        if(app->slen < 95) app->slen++;
+        app->score++;
+        do {
+            app->foodx = rand() % SNAKE_COLS;
+            app->foody = rand() % SNAKE_ROWS;
+        } while(snake_hit(app, app->foodx, app->foody));
+    }
+}
+
+static void pong_step(GamesApp* app) {
+    app->ball_x += app->ball_dx;
+    app->ball_y += app->ball_dy;
+
+    if(app->ball_y < 12 || app->ball_y > 61) app->ball_dy = -app->ball_dy;
+
+    if(app->ball_x < 7 && app->ball_y >= app->paddle_y &&
+       app->ball_y <= app->paddle_y + 15) {
+        app->ball_dx = 2;
+        app->score++;
+    }
+
+    if(app->ball_x > 126) app->ball_dx = -2;
+    if(app->ball_x < 0) game_reset(app);
+}
+
+static void dodge_step(GamesApp* app) {
+    app->rock_y += 3;
+
+    if(app->rock_y > 64) {
+        app->rock_y = 12;
+        app->rock_x = 5 + rand() % 116;
+        app->score++;
+    }
+
+    if(app->rock_y + 7 >= 54 && app->rock_x < app->player_x + 10 &&
+       app->rock_x + 7 > app->player_x) {
+        game_reset(app);
+    }
+}
+
+static void tetris_step(GamesApp* app) {
+    if(app->ty < 11 &&
+       !(app->board[app->ty + 2] & (1u << app->tx)) &&
+       !(app->board[app->ty + 2] & (1u << (app->tx + 1)))) {
+        app->ty++;
+        return;
+    }
+
+    if(app->ty < 12) {
+        app->board[app->ty] |= (1u << app->tx) | (1u << (app->tx + 1));
+        app->board[app->ty + 1] |= (1u << app->tx) | (1u << (app->tx + 1));
+    }
+
+    for(int y = 12; y >= 0; y--) {
+        if(app->board[y] == 0x03FFu) {
+            for(int row = y; row > 0; row--) app->board[row] = app->board[row - 1];
+            app->board[0] = 0;
+            y++;
+            app->score += 10;
+        }
+    }
+
+    app->tx = 3 + rand() % 4;
+    app->ty = 0;
+
+    if(app->board[1] & (1u << app->tx)) game_reset(app);
+}
+
+static void game_update(GamesApp* app) {
+    if(app->mode == GameSnake) {
+        snake_step(app);
+    } else if(app->mode == GamePong) {
+        pong_step(app);
+    } else if(app->mode == GameDodge) {
+        dodge_step(app);
+    } else if(app->mode == GameTetris) {
+        tetris_step(app);
+    }
+}
+
+static void draw_header(Canvas* canvas, const char* title, uint32_t score) {
+    char buffer[20];
+    snprintf(buffer, sizeof(buffer), "%lu", (unsigned long)score);
+    canvas_set_font(canvas, FontSecondary);
+    canvas_draw_str(canvas, 2, 8, title);
+    canvas_draw_str(canvas, 110, 8, buffer);
+}
+
+static void draw_menu(Canvas* canvas, GamesApp* app) {
+    canvas_clear(canvas);
+    canvas_set_font(canvas, FontPrimary);
+    canvas_draw_str(canvas, 2, 11, "Games");
+
+    for(uint8_t i = 0; i < GAMES_COUNT; i++) {
+        uint8_t y = 22 + i * 10;
+        if(i == app->menu_index) {
+            canvas_draw_box(canvas, 0, y - 8, 127, 10);
+            canvas_set_color(canvas, ColorWhite);
+            canvas_draw_str(canvas, 8, y, game_names[i]);
+            canvas_set_color(canvas, ColorBlack);
+        } else {
+            canvas_draw_str(canvas, 8, y, game_names[i]);
+        }
+    }
+
+    canvas_set_font(canvas, FontSecondary);
+    canvas_draw_str(canvas, 2, 62, "UP/DOWN  OK");
+}
+
+static void draw_game(Canvas* canvas, GamesApp* app) {
+    canvas_clear(canvas);
+
+    if(app->mode == GameSnake) {
+        draw_header(canvas, "SNAKE", app->score);
+        for(int i = 0; i < app->slen; i++) {
+            canvas_draw_box(canvas, app->sx[i] * CELL, 12 + app->sy[i] * CELL, CELL, CELL);
+        }
+        canvas_draw_box(canvas, app->foodx * CELL, 12 + app->foody * CELL, CELL, CELL);
+    } else if(app->mode == GamePong) {
+        draw_header(canvas, "PONG", app->score);
+        canvas_draw_box(canvas, 2, app->paddle_y, 3, 15);
+        canvas_draw_disc(canvas, app->ball_x, app->ball_y, 2);
+    } else if(app->mode == GameDodge) {
+        draw_header(canvas, "DODGE", app->score);
+        canvas_draw_box(canvas, app->player_x, 54, 10, 6);
+        canvas_draw_box(canvas, app->rock_x, app->rock_y, 7, 7);
+    } else {
+        draw_header(canvas, "TETRIS", app->score);
+        for(int y = 0; y < 13; y++) {
+            for(int x = 0; x < 10; x++) {
+                if(app->board[y] & (1u << x)) {
+                    canvas_draw_box(canvas, 24 + x * 4, 12 + y * 4, 4, 4);
+                }
+            }
+        }
+        canvas_draw_box(canvas, 24 + app->tx * 4, 12 + app->ty * 4, 4, 4);
+        canvas_draw_box(canvas, 28 + app->tx * 4, 12 + app->ty * 4, 4, 4);
+        canvas_draw_box(canvas, 24 + app->tx * 4, 16 + app->ty * 4, 4, 4);
+        canvas_draw_box(canvas, 28 + app->tx * 4, 16 + app->ty * 4, 4, 4);
+    }
+}
+
+static void games_draw_callback(Canvas* canvas, void* context) {
+    GamesApp* app = context;
+
+    if(app->mode == GameMenu) {
+        draw_menu(canvas, app);
+        return;
+    }
+
+    uint32_t now = app->ticks;
+    uint32_t elapsed = now - app->drawn_ticks;
+    if(elapsed > 0) {
+        if(elapsed > 4) elapsed = 4;
+        for(uint32_t i = 0; i < elapsed; i++) game_update(app);
+        app->drawn_ticks = now;
+    }
+
+    draw_game(canvas, app);
+}
+
+static void games_timer_callback(void* context) {
+    GamesApp* app = context;
+    app->ticks++;
+    view_port_update(app->viewport);
+}
+
+static void games_input_callback(InputEvent* event, void* context) {
+    GamesApp* app = context;
+
+    if(event->type != InputTypePress && event->type != InputTypeRepeat) return;
+
+    if(app->mode == GameMenu) {
+        if(event->key == InputKeyUp) {
+            if(app->menu_index > 0) app->menu_index--;
+            view_port_update(app->viewport);
+        } else if(event->key == InputKeyDown) {
+            if(app->menu_index + 1 < GAMES_COUNT) app->menu_index++;
+            view_port_update(app->viewport);
+        } else if(event->key == InputKeyOk) {
+            app->mode = (GameMode)(GameSnake + app->menu_index);
+            game_reset(app);
+            view_port_update(app->viewport);
+        } else if(event->key == InputKeyBack) {
+            app->exit_requested = true;
+            furi_semaphore_release(app->exit_sem);
+        }
+        return;
+    }
+
+    if(event->key == InputKeyBack) {
+        app->mode = GameMenu;
+        app->drawn_ticks = app->ticks;
+        view_port_update(app->viewport);
+        return;
+    }
+
+    if(app->mode == GameSnake) {
+        if(event->key == InputKeyUp && app->sdy == 0) {
+            app->sdx = 0;
+            app->sdy = -1;
+        } else if(event->key == InputKeyDown && app->sdy == 0) {
+            app->sdx = 0;
+            app->sdy = 1;
+        } else if(event->key == InputKeyLeft && app->sdx == 0) {
+            app->sdx = -1;
+            app->sdy = 0;
+        } else if(event->key == InputKeyRight && app->sdx == 0) {
+            app->sdx = 1;
+            app->sdy = 0;
+        }
+    } else if(app->mode == GamePong) {
+        if(event->key == InputKeyUp) app->paddle_y -= 4;
+        if(event->key == InputKeyDown) app->paddle_y += 4;
+        if(app->paddle_y < 12) app->paddle_y = 12;
+        if(app->paddle_y > 48) app->paddle_y = 48;
+    } else if(app->mode == GameDodge) {
+        if(event->key == InputKeyLeft) app->player_x -= 5;
+        if(event->key == InputKeyRight) app->player_x += 5;
+        if(app->player_x < 2) app->player_x = 2;
+        if(app->player_x > 116) app->player_x = 116;
+    } else if(app->mode == GameTetris) {
+        if(event->key == InputKeyLeft && app->tx > 0) app->tx--;
+        if(event->key == InputKeyRight && app->tx < 8) app->tx++;
+        if(event->key == InputKeyDown) tetris_step(app);
+    }
+
+    view_port_update(app->viewport);
+}
+
+int32_t games_app(void* p) {
+    UNUSED(p);
+
+    GamesApp app = {0};
+    app.mode = GameMenu;
+    app.gui = furi_record_open(RECORD_GUI);
+    app.viewport = view_port_alloc();
+    app.exit_sem = furi_semaphore_alloc(1, 0);
+
+    view_port_draw_callback_set(app.viewport, games_draw_callback, &app);
+    view_port_input_callback_set(app.viewport, games_input_callback, &app);
+    gui_add_view_port(app.gui, app.viewport, GuiLayerFullscreen);
+
+    app.timer = furi_timer_alloc(games_timer_callback, FuriTimerTypePeriodic, &app);
+    furi_timer_start(app.timer, furi_ms_to_ticks(50));
+
+    view_port_update(app.viewport);
+    furi_semaphore_acquire(app.exit_sem, FuriWaitForever);
+
+    furi_timer_stop(app.timer);
+    furi_timer_free(app.timer);
+    gui_remove_view_port(app.gui, app.viewport);
+    view_port_free(app.viewport);
+    furi_semaphore_free(app.exit_sem);
+    furi_record_close(RECORD_GUI);
+
+    return 0;
+}
