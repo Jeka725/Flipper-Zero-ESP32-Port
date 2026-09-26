@@ -32,6 +32,7 @@ APPS = [
     "interface_settings",
     "desktop",
     "archive",
+    "games",
 
     # Original games already present in this port.
     "snake",
