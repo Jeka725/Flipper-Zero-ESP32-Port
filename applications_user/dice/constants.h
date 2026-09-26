@@ -110,7 +110,7 @@ typedef struct {
     FuriMutex* mutex;
 } State;
 
-void init(State* const state) {
+static void init(State* const state) {
     state->app_state = SelectState;
     state->roll_result = 0;
     state->dice_index = 0;
