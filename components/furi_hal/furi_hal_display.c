@@ -73,8 +73,8 @@ static uint16_t bg_color;
 #define LCD_CMD_BITS   BOARD_LCD_CMD_BITS
 #define LCD_PARAM_BITS BOARD_LCD_PARAM_BITS
 
-/* Stripe-based rendering: render & DMA-send N lines at a time.
- * Reduces DMA buffer from full-frame (~100KB) to a small stripe (~5KB). */
+/* Stripe-based rendering: render & DMA-send larger stripes to reduce per-frame SPI synchronization overhead.
+ * Keeps the DMA buffer small while reducing transfer/wait overhead. */
 #define STRIPE_HEIGHT 32
 
 static esp_lcd_panel_handle_t panel_handle = NULL;
