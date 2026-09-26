@@ -104,10 +104,20 @@ jobs:
               end -= 1
           if end == 0:
               raise SystemExit("Refusing to create an empty firmware image")
-          path.write_bytes(data[:end])
+
+          # Keep the compact image, but finish on a 4 KiB flash-sector
+          # boundary.  This avoids a partial final sector in browser
+          # flashers when transport compression is enabled.
+          sector = 4096
+          trimmed = data[:end]
+          padded_end = ((end + sector - 1) // sector) * sector
+          trimmed += b"\\xFF" * (padded_end - end)
+
+          path.write_bytes(trimmed)
           print(f"Original merged image: {original} bytes ({original / 1024 / 1024:.2f} MiB)")
           print(f"Trimmed firmware image: {end} bytes ({end / 1024 / 1024:.2f} MiB)")
-          print(f"Removed trailing 0xFF padding: {original - end} bytes")
+          print(f"4 KiB-aligned firmware image: {padded_end} bytes ({padded_end / 1024 / 1024:.2f} MiB)")
+          print(f"Removed trailing 0xFF padding: {original - padded_end} bytes")
           PY
 
           mv "$STAGE/${BOARD}.bin" "$STAGE/firmware.bin"
