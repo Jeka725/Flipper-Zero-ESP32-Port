@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <furi.h>
 #include <gui/gui.h>
 #include <gui/view.h>
