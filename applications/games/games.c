@@ -7,6 +7,7 @@
 #include <string.h>
 
 #define GAMES_COUNT 4
+#define GAMES_FIRMWARE_VERSION "1.4.3"
 #define CELL 4
 #define SNAKE_COLS 32
 #define SNAKE_ROWS 13
