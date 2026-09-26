@@ -76,33 +76,14 @@ jobs:
           mkdir -p "$STAGE"
 
           source ~/esp/esp-idf/export.sh
-          # Do not force the merged image to the full 16 MiB flash size.
-          # The ESP32-S3 has a 16 MiB flash chip, but the useful image ends
-          # before the final 0xFF padding. Keeping that padding makes mobile
-          # flashers transfer ~16 MiB and can make compressed writes appear
-          # stuck at 99%.
-          python -m esptool --chip esp32s3 merge_bin             -o "$STAGE/firmware.bin"             0x0 "$BUILD/bootloader/bootloader.bin"             0x8000 "$BUILD/partition_table/partition-table.bin"             0x10000 "$BUILD/furi_esp32.bin"             0xBF0000 "$BUILD/ota_data_initial.bin"             0xC20000 "$BUILD/littlefs.bin"
+          python -m esptool --chip esp32s3 merge_bin             --flash_size 16MB             -o "$STAGE/firmware.bin"             0x0 "$BUILD/bootloader/bootloader.bin"             0x8000 "$BUILD/partition_table/partition-table.bin"             0x10000 "$BUILD/furi_esp32.bin"             0xBF0000 "$BUILD/ota_data_initial.bin"             0xC20000 "$BUILD/littlefs.bin"
 
-          python - <<'PY'
-from pathlib import Path
-p = Path("artifact_staging/firmware.bin")
-data = p.read_bytes()
-trimmed = data.rstrip(b"\xff")
-if not trimmed:
-    raise SystemExit("firmware.bin became empty")
-p.write_bytes(trimmed)
-print(f"firmware.bin: {len(data)} -> {len(trimmed)} bytes")
-PY
+          test "$(stat -c %s "$STAGE/firmware.bin")" -eq 16777216
+          python -m esptool --chip esp32s3 image_info "$STAGE/firmware.bin"
 
-          # Validate that the merged image is non-empty and remains within
-          # the physical 16 MiB flash limit. Do not run image_info on the
-          # raw merged file after trimming: image_info is intended for ESP
-          # image files, while this artifact is a flash-addressed container.
-          test -s "$STAGE/firmware.bin"
-          test "$(stat -c %s "$STAGE/firmware.bin")" -le 16777216
-          test "$(python -c 'from pathlib import Path; print(Path("artifact_staging/firmware.bin").read_bytes()[0])')" -eq 233
-
-          # Keep the Wokwi copy identical to the downloadable firmware.
+          # esptool compresses serial transfer by default. Verify the installed
+          # command exposes the explicit no-compress switch.
+          python -m esptool --chip esp32s3 write_flash --help | grep -q -- "--no-compress"
 
           rm -rf "$STAGE/wokwi"
           mkdir -p "$STAGE/wokwi"
