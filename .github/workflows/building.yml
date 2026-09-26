@@ -84,6 +84,7 @@ jobs:
 
           source ~/esp/esp-idf/export.sh
           python -m esptool --chip "$CHIP" merge_bin \
+            --flash_size "$FLASH_SIZE" \
             -o "$STAGE/${BOARD}.bin" \
             0x0 "$BUILD/bootloader/bootloader.bin" \
             0x8000 "$BUILD/partition_table/partition-table.bin" \
@@ -91,28 +92,14 @@ jobs:
             0xBF0000 "$BUILD/ota_data_initial.bin" \
             0xC20000 "$BUILD/littlefs.bin"
 
-          # Remove only unused trailing 0xFF bytes. Keep all required
-          # flash offsets inside one compact, directly flashable image.
-          python - <<'PY'
-          from pathlib import Path
-
-          path = Path("artifact_staging/esp32s3_st7735.bin")
-          data = path.read_bytes()
-          original = len(data)
-          end = original
-          while end and data[end - 1] == 0xFF:
-              end -= 1
-          if end == 0:
-              raise SystemExit("Refusing to create an empty firmware image")
-          path.write_bytes(data[:end])
-          print(f"Original merged image: {original} bytes ({original / 1024 / 1024:.2f} MiB)")
-          print(f"Trimmed firmware image: {end} bytes ({end / 1024 / 1024:.2f} MiB)")
-          print(f"Removed trailing 0xFF padding: {original - end} bytes")
-          PY
-
+          # Keep the image exactly 16 MiB. This is intentional: browser flashers
+          # that enable compressed transfer can otherwise stop near 99% while
+          # handling a sparse/short merged image against a 16 MiB target.
+          # Compression still reduces the actual transfer of repeated 0xFF data.
           mv "$STAGE/${BOARD}.bin" "$STAGE/firmware.bin"
+          test "$(stat -c %s "$STAGE/firmware.bin")" -eq 16777216
 
-          echo "=== Compact single firmware image ==="
+          echo "=== Full 16 MiB compression-safe firmware image ==="
           stat -c '%n %s bytes' "$STAGE/firmware.bin"
           python -m esptool --chip "$CHIP" image_info "$STAGE/firmware.bin"
 
