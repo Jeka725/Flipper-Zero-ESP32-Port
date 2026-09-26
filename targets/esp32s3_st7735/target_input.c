@@ -1,13 +1,14 @@
 /**
  * @file target_input.c
- * Five-button input driver for ESP32-S3 N16R8 ST7735S board.
+ * Four-button input driver for ESP32-S3 N16R8 ST7735S board.
  *
  * Exact physical mapping:
- *   SELECT=GPIO14, RIGHT=GPIO13, LEFT=GPIO12, UP=GPIO9, DOWN=GPIO11.
+ *   RIGHT=GPIO13, LEFT=GPIO12, UP=GPIO9, DOWN=GPIO11.
+ * GPIO14 is intentionally unused because this hardware has four physical buttons.
  * All buttons are active-low and use the ESP32 internal pull-ups.
  *
  * Back shortcut:
- *   Holding ANY of the five buttons for 2 seconds generates
+ *   Holding ANY of the four buttons for 2 seconds generates
  *   InputKeyBack/InputTypeShort immediately, before the button is released.
  */
 #include "target_input.h"
@@ -16,7 +17,7 @@
 #include <boards/board.h>
 #include <driver/gpio.h>
 
-#define TAG "Input5Button"
+#define TAG "Input4Button"
 #define INPUT_DEBOUNCE_POLLS 3U
 #define INPUT_BACK_HOLD_MS 2000U
 
@@ -35,7 +36,6 @@ static Button buttons[] = {
     {(gpio_num_t)BOARD_PIN_BUTTON_DOWN, InputKeyDown, false, false, 0, 0, false},
     {(gpio_num_t)BOARD_PIN_BUTTON_LEFT, InputKeyLeft, false, false, 0, 0, false},
     {(gpio_num_t)BOARD_PIN_BUTTON_RIGHT, InputKeyRight, false, false, 0, 0, false},
-    {(gpio_num_t)BOARD_PIN_BUTTON_OK, InputKeyOk, false, false, 0, 0, false},
 };
 
 static void publish(FuriPubSub* pubsub, InputKey key, InputType type, uint32_t* seq) {
@@ -72,7 +72,7 @@ void target_input_init(void) {
 
     FURI_LOG_I(
         TAG,
-        "Input: UP=9 DOWN=11 LEFT=12 RIGHT=13 SELECT=14; any button held 2s = Back");
+        "Input: UP=9 DOWN=11 LEFT=12 RIGHT=13; GPIO14 unused; any button held 2s = Back");
 }
 
 void target_input_poll(FuriPubSub* pubsub, uint32_t* sequence_counter) {
