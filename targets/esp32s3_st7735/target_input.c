@@ -1,14 +1,13 @@
 /**
  * @file target_input.c
- * Five-button input driver for ESP32-S3 N16R8 ST7735S board.
+ * Four-button input driver for ESP32-S3 N16R8 ST7735S board.
  *
- * Exact physical mapping:
- *   SELECT=GPIO14, RIGHT=GPIO13, LEFT=GPIO12, UP=GPIO9, DOWN=GPIO11.
+ * Physical mapping:
+ *   UP=GPIO9, DOWN=GPIO11, LEFT=GPIO12, RIGHT=GPIO13.
  * All buttons are active-low and use the ESP32 internal pull-ups.
  *
  * Back shortcut:
- *   Holding ANY of the five buttons for 2 seconds generates
- *   InputKeyBack/InputTypeShort immediately, before the button is released.
+ *   Holding ANY button for 2 seconds generates InputKeyBack.
  */
 #include "target_input.h"
 
@@ -16,7 +15,7 @@
 #include <boards/board.h>
 #include <driver/gpio.h>
 
-#define TAG "Input5Button"
+#define TAG "Input4Button"
 #define INPUT_DEBOUNCE_POLLS 3U
 #define INPUT_BACK_HOLD_MS 2000U
 
@@ -35,7 +34,6 @@ static Button buttons[] = {
     {(gpio_num_t)BOARD_PIN_BUTTON_DOWN, InputKeyDown, false, false, 0, 0, false},
     {(gpio_num_t)BOARD_PIN_BUTTON_LEFT, InputKeyLeft, false, false, 0, 0, false},
     {(gpio_num_t)BOARD_PIN_BUTTON_RIGHT, InputKeyRight, false, false, 0, 0, false},
-    {(gpio_num_t)BOARD_PIN_BUTTON_OK, InputKeyOk, false, false, 0, 0, false},
 };
 
 static void publish(FuriPubSub* pubsub, InputKey key, InputType type, uint32_t* seq) {
@@ -70,9 +68,7 @@ void target_input_init(void) {
         buttons[i].back_sent = false;
     }
 
-    FURI_LOG_I(
-        TAG,
-        "Input: UP=9 DOWN=11 LEFT=12 RIGHT=13 SELECT=14; any button held 2s = Back");
+    FURI_LOG_I(TAG, "Input: UP=9 DOWN=11 LEFT=12 RIGHT=13; any button held 2s = Back");
 }
 
 void target_input_poll(FuriPubSub* pubsub, uint32_t* sequence_counter) {
@@ -83,7 +79,6 @@ void target_input_poll(FuriPubSub* pubsub, uint32_t* sequence_counter) {
         Button* b = &buttons[i];
         const bool raw = button_pressed(b);
 
-        /* Debounce the physical GPIO. */
         if(raw != b->raw) {
             b->raw = raw;
             b->debounce = 1;
@@ -95,13 +90,10 @@ void target_input_poll(FuriPubSub* pubsub, uint32_t* sequence_counter) {
             continue;
         }
 
-        /* Stable state unchanged: check the 2-second Back timer. */
         if(b->stable == b->raw) {
             if(b->stable && !b->back_sent &&
                (now - b->pressed_at >= back_hold_ticks)) {
                 b->back_sent = true;
-
-                /* Emit a complete logical Back sequence for ViewDispatcher. */
                 publish(pubsub, InputKeyBack, InputTypePress, sequence_counter);
                 publish(pubsub, InputKeyBack, InputTypeShort, sequence_counter);
                 publish(pubsub, InputKeyBack, InputTypeRelease, sequence_counter);
@@ -110,7 +102,6 @@ void target_input_poll(FuriPubSub* pubsub, uint32_t* sequence_counter) {
             continue;
         }
 
-        /* Stable state changed. */
         b->stable = b->raw;
 
         if(b->stable) {
