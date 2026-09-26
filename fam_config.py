@@ -32,6 +32,7 @@ APPS = [
     "interface_settings",
     "desktop",
     "archive",
+    "games",
     "about",
     "bt_settings",
     "example_apps_data",
