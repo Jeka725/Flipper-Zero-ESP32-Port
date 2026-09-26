@@ -116,6 +116,21 @@ jobs:
           stat -c '%n %s bytes' "$STAGE/firmware.bin"
           python -m esptool --chip "$CHIP" image_info "$STAGE/firmware.bin"
 
+          # Verify the exact command used by common ESP32 flashers.
+          # esptool enables compressed transfer by default; --compress is
+          # explicit here so the generated flash instructions match the
+          # intended fast/sparse transfer mode.
+          python -m esptool --chip "$CHIP" write_flash --help | grep -q -- "--compress"
+
+          cat > "$STAGE/flash-esp32s3-compressed.txt" <<'EOF'
+ESP32-S3 N16R8 — single-image flashing
+1. Select firmware.bin.
+2. Flash address: 0x0
+3. Enable "Compress" / compressed transfer.
+4. Flash size: 16 MB.
+5. If the web flasher has a separate erase option, erase before flashing once.
+EOF
+
           rm -rf "$STAGE/wokwi"
           mkdir -p "$STAGE/wokwi"
           cp wokwi/diagram.json "$STAGE/wokwi/diagram.json"
@@ -123,9 +138,26 @@ jobs:
           cp "$STAGE/firmware.bin" "$STAGE/wokwi/firmware.bin"
           cp "$BUILD/littlefs.bin" "$STAGE/wokwi/littlefs.bin"
 
-      - name: Upload firmware and Wokwi project
+      - name: Upload firmware BIN
         uses: actions/upload-artifact@v7
         with:
-          name: flipper-esp32s3-st7735-firmware
+          name: flipper-esp32s3-st7735-firmware-bin
           path: artifact_staging/firmware.bin
           retention-days: 30
+          if-no-files-found: error
+
+      - name: Upload flashing instructions
+        uses: actions/upload-artifact@v7
+        with:
+          name: flipper-esp32s3-st7735-flash-info
+          path: artifact_staging/flash-esp32s3-compressed.txt
+          retention-days: 30
+          if-no-files-found: error
+
+      - name: Upload Wokwi test project
+        uses: actions/upload-artifact@v7
+        with:
+          name: flipper-esp32s3-st7735-wokwi
+          path: artifact_staging/wokwi
+          retention-days: 30
+          if-no-files-found: error
