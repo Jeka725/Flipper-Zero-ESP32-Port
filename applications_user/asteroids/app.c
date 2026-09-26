@@ -455,7 +455,7 @@ void asteroid_was_hit(AsteroidsApp *app, int id) {
 
 /* Set game over state. When in game-over mode, the game displays a
  * game over text with a background of many asteroids floating around. */
-void game_over(AsteroidsApp *app) {
+static void game_over(AsteroidsApp *app) {
     restart_game_after_gameover(app);
     app->gameover = true;
     int asteroids = 8;
