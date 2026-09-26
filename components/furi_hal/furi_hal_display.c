@@ -81,7 +81,7 @@ static esp_lcd_panel_handle_t panel_handle = NULL;
 static bool panel_is_asleep = false; /* guards the sleep/wake pair */
 static uint16_t* rgb565_buf = NULL; // STRIPE_HEIGHT lines only
 static uint16_t margins_last_fg_color = 0;
-static bool margins_initialized = false;
+static bool margins_initialized = false; /* Margin DMA is skipped on unchanged frames. */
 static SemaphoreHandle_t lcd_flush_done = NULL;
 static uint8_t x_scale_lut[SCALED_WIDTH];
 static uint8_t y_scale_lut[SCALED_HEIGHT];
