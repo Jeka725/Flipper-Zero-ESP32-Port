@@ -75,11 +75,13 @@ static uint16_t bg_color;
 
 /* Stripe-based rendering: render & DMA-send N lines at a time.
  * Reduces DMA buffer from full-frame (~100KB) to a small stripe (~5KB). */
-#define STRIPE_HEIGHT 8
+#define STRIPE_HEIGHT 32
 
 static esp_lcd_panel_handle_t panel_handle = NULL;
 static bool panel_is_asleep = false; /* guards the sleep/wake pair */
 static uint16_t* rgb565_buf = NULL; // STRIPE_HEIGHT lines only
+static uint16_t margins_last_fg_color = 0;
+static bool margins_initialized = false;
 static SemaphoreHandle_t lcd_flush_done = NULL;
 static uint8_t x_scale_lut[SCALED_WIDTH];
 static uint8_t y_scale_lut[SCALED_HEIGHT];
@@ -364,17 +366,25 @@ void furi_hal_display_commit(const uint8_t* data, uint32_t size) {
      * Top/bottom strips span the full width; left/right strips (the always-on
      * DISPLAY_SIDE_MARGIN inset, plus any extra from aspect-fit centering) span
      * only the height of the scaled image so they don't overdraw the corners. */
-    if(MARGIN_Y > 0) {
-        display_paint_rect(0, 0, LCD_H_RES, MARGIN_Y, fg_color);
-        display_paint_rect(
-            0, MARGIN_Y + SCALED_HEIGHT,
-            LCD_H_RES, LCD_V_RES - MARGIN_Y - SCALED_HEIGHT, fg_color);
-    }
-    if(MARGIN_X > 0) {
-        display_paint_rect(0, MARGIN_Y, MARGIN_X, SCALED_HEIGHT, fg_color);
-        display_paint_rect(
-            MARGIN_X + SCALED_WIDTH, MARGIN_Y,
-            LCD_H_RES - MARGIN_X - SCALED_WIDTH, SCALED_HEIGHT, fg_color);
+    /* The margin color normally does not change. Repainting all four
+     * margins on every frame serialized extra SPI DMA transactions and made
+     * the 128x64 UI feel sluggish on the small ST7735S. Paint them only once
+     * and again when the UI foreground color actually changes. */
+    if(!margins_initialized || margins_last_fg_color != fg_color) {
+        if(MARGIN_Y > 0) {
+            display_paint_rect(0, 0, LCD_H_RES, MARGIN_Y, fg_color);
+            display_paint_rect(
+                0, MARGIN_Y + SCALED_HEIGHT,
+                LCD_H_RES, LCD_V_RES - MARGIN_Y - SCALED_HEIGHT, fg_color);
+        }
+        if(MARGIN_X > 0) {
+            display_paint_rect(0, MARGIN_Y, MARGIN_X, SCALED_HEIGHT, fg_color);
+            display_paint_rect(
+                MARGIN_X + SCALED_WIDTH, MARGIN_Y,
+                LCD_H_RES - MARGIN_X - SCALED_WIDTH, SCALED_HEIGHT, fg_color);
+        }
+        margins_last_fg_color = fg_color;
+        margins_initialized = true;
     }
 
     for(size_t stripe_y = 0; stripe_y < SCALED_HEIGHT; stripe_y += STRIPE_HEIGHT) {
