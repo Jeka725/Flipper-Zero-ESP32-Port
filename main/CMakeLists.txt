@@ -76,6 +76,18 @@ if(NOT CMAKE_SCRIPT_MODE_FILE)
         idf::espressif__mdns
     )
 
+    # Several legacy games were written as standalone FAPs and expose
+    # generic global helper names. They now share one firmware link unit, so
+    # give the colliding helpers private names at compile time.
+    if(TARGET esp32_fam_app_asteroids)
+        target_compile_definitions(esp32_fam_app_asteroids PRIVATE
+            game_over=asteroids_game_over)
+    endif()
+    if(TARGET esp32_fam_app_dice_app)
+        target_compile_definitions(esp32_fam_app_dice_app PRIVATE
+            init=dice_app_init)
+    endif()
+
     foreach(esp32_fam_target IN LISTS ESP32_FAM_PORTED_OBJECT_TARGETS)
         target_link_libraries(${esp32_fam_target} PRIVATE ${ESP32_FAM_PORTED_COMPONENT_LIBS})
         target_include_directories(${esp32_fam_target} PRIVATE
