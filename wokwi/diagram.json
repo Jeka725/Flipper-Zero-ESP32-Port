@@ -21,6 +21,56 @@
       "top": -20,
       "left": 220,
       "attrs": {}
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "up",
+      "top": 120,
+      "left": 220,
+      "attrs": {
+        "color": "green",
+        "label": "UP"
+      }
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "down",
+      "top": 160,
+      "left": 220,
+      "attrs": {
+        "color": "green",
+        "label": "DOWN"
+      }
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "left",
+      "top": 120,
+      "left": 300,
+      "attrs": {
+        "color": "blue",
+        "label": "LEFT"
+      }
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "right",
+      "top": 160,
+      "left": 300,
+      "attrs": {
+        "color": "blue",
+        "label": "RIGHT"
+      }
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "ok",
+      "top": 140,
+      "left": 380,
+      "attrs": {
+        "color": "red",
+        "label": "OK"
+      }
     }
   ],
   "connections": [
@@ -64,6 +114,66 @@
       "lcd:RST",
       "esp:15",
       "blue",
+      []
+    ],
+    [
+      "up:1",
+      "esp:9",
+      "green",
+      []
+    ],
+    [
+      "up:2",
+      "esp:GND.1",
+      "black",
+      []
+    ],
+    [
+      "down:1",
+      "esp:11",
+      "green",
+      []
+    ],
+    [
+      "down:2",
+      "esp:GND.1",
+      "black",
+      []
+    ],
+    [
+      "left:1",
+      "esp:12",
+      "blue",
+      []
+    ],
+    [
+      "left:2",
+      "esp:GND.1",
+      "black",
+      []
+    ],
+    [
+      "right:1",
+      "esp:13",
+      "blue",
+      []
+    ],
+    [
+      "right:2",
+      "esp:GND.1",
+      "black",
+      []
+    ],
+    [
+      "ok:1",
+      "esp:14",
+      "red",
+      []
+    ],
+    [
+      "ok:2",
+      "esp:GND.1",
+      "black",
       []
     ]
   ],
