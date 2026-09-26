@@ -1,4 +1,5 @@
 name: Build Flipper ESP32-S3 ST7735S
+# CI validates every main update before a firmware artifact is considered ready.
 
 on:
   push:
