@@ -7,7 +7,7 @@
  * All buttons are active-low and use the ESP32 internal pull-ups.
  *
  * Back shortcut:
- *   Holding ANY of the five buttons for 2 seconds generates
+ *   Holding SELECT/OK (GPIO14) for 2 seconds generates
  *   InputKeyBack/InputTypeShort immediately, before the button is released.
  */
 #include "target_input.h"
@@ -19,6 +19,7 @@
 #define TAG "Input5Button"
 #define INPUT_DEBOUNCE_POLLS 3U
 #define INPUT_BACK_HOLD_MS 2000U
+#define INPUT_BACK_LOCKOUT_MS 500U
 
 typedef struct {
     gpio_num_t pin;
@@ -28,14 +29,15 @@ typedef struct {
     uint8_t debounce;
     uint32_t pressed_at;
     bool back_sent;
+    bool suppress_click;
 } Button;
 
 static Button buttons[] = {
-    {(gpio_num_t)BOARD_PIN_BUTTON_UP, InputKeyUp, false, false, 0, 0, false},
-    {(gpio_num_t)BOARD_PIN_BUTTON_DOWN, InputKeyDown, false, false, 0, 0, false},
-    {(gpio_num_t)BOARD_PIN_BUTTON_LEFT, InputKeyLeft, false, false, 0, 0, false},
-    {(gpio_num_t)BOARD_PIN_BUTTON_RIGHT, InputKeyRight, false, false, 0, 0, false},
-    {(gpio_num_t)BOARD_PIN_BUTTON_OK, InputKeyOk, false, false, 0, 0, false},
+    {(gpio_num_t)BOARD_PIN_BUTTON_UP, InputKeyUp, false, false, 0, 0, false, false},
+    {(gpio_num_t)BOARD_PIN_BUTTON_DOWN, InputKeyDown, false, false, 0, 0, false, false},
+    {(gpio_num_t)BOARD_PIN_BUTTON_LEFT, InputKeyLeft, false, false, 0, 0, false, false},
+    {(gpio_num_t)BOARD_PIN_BUTTON_RIGHT, InputKeyRight, false, false, 0, 0, false, false},
+    {(gpio_num_t)BOARD_PIN_BUTTON_OK, InputKeyOk, false, false, 0, 0, false, false},
 };
 
 static void publish(FuriPubSub* pubsub, InputKey key, InputType type, uint32_t* seq) {
@@ -47,6 +49,8 @@ static void publish(FuriPubSub* pubsub, InputKey key, InputType type, uint32_t* 
     };
     furi_pubsub_publish(pubsub, &event);
 }
+
+static uint32_t select_back_lockout_until;
 
 static bool button_pressed(const Button* b) {
     return gpio_get_level(b->pin) == 0;
@@ -68,11 +72,13 @@ void target_input_init(void) {
         buttons[i].debounce = INPUT_DEBOUNCE_POLLS;
         buttons[i].pressed_at = 0;
         buttons[i].back_sent = false;
+        buttons[i].suppress_click = false;
     }
+    select_back_lockout_until = 0;
 
     FURI_LOG_I(
         TAG,
-        "Input: UP=9 DOWN=11 LEFT=12 RIGHT=13 SELECT=14; any button held 2s = Back");
+        "Input: UP=9 DOWN=11 LEFT=12 RIGHT=13 SELECT=14; SELECT held 2s = Back");
 }
 
 void target_input_poll(FuriPubSub* pubsub, uint32_t* sequence_counter) {
@@ -95,11 +101,12 @@ void target_input_poll(FuriPubSub* pubsub, uint32_t* sequence_counter) {
             continue;
         }
 
-        /* Stable state unchanged: check the 2-second Back timer. */
+        /* Stable state unchanged: only SELECT/OK gets the long-press Back shortcut. */
         if(b->stable == b->raw) {
-            if(b->stable && !b->back_sent &&
+            if(b->key == InputKeyOk && b->stable && !b->back_sent &&
                (now - b->pressed_at >= back_hold_ticks)) {
                 b->back_sent = true;
+                select_back_lockout_until = now + furi_ms_to_ticks(INPUT_BACK_LOCKOUT_MS);
 
                 /* Emit a complete logical Back sequence for ViewDispatcher. */
                 publish(pubsub, InputKeyBack, InputTypePress, sequence_counter);
@@ -116,13 +123,22 @@ void target_input_poll(FuriPubSub* pubsub, uint32_t* sequence_counter) {
         if(b->stable) {
             b->pressed_at = now;
             b->back_sent = false;
-            publish(pubsub, b->key, InputTypePress, sequence_counter);
-        } else {
-            if(!b->back_sent) {
-                publish(pubsub, b->key, InputTypeShort, sequence_counter);
+            b->suppress_click =
+                (b->key == InputKeyOk) &&
+                ((int32_t)(now - select_back_lockout_until) < 0);
+
+            if(!b->suppress_click) {
+                publish(pubsub, b->key, InputTypePress, sequence_counter);
             }
-            publish(pubsub, b->key, InputTypeRelease, sequence_counter);
+        } else {
+            if(!b->suppress_click) {
+                if(!b->back_sent) {
+                    publish(pubsub, b->key, InputTypeShort, sequence_counter);
+                }
+                publish(pubsub, b->key, InputTypeRelease, sequence_counter);
+            }
             b->back_sent = false;
+            b->suppress_click = false;
         }
     }
 }
