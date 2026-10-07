@@ -89,7 +89,6 @@ jobs:
           cp wokwi/diagram.json "$STAGE/wokwi/diagram.json"
           cp wokwi/wokwi.toml "$STAGE/wokwi/wokwi.toml"
           cp "$STAGE/firmware.bin" "$STAGE/wokwi/firmware.bin"
-          cp "$BUILD/littlefs.bin" "$STAGE/wokwi/littlefs.bin"
 
       - name: Upload Wokwi test bundle
         uses: actions/upload-artifact@v7
