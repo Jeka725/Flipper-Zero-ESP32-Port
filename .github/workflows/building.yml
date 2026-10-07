@@ -75,7 +75,7 @@ jobs:
           mkdir -p "$STAGE"
 
           source ~/esp/esp-idf/export.sh
-          python -m esptool --chip esp32s3 merge_bin             --flash_size 16MB             --pad-to 0x1000000             -o "$STAGE/firmware.bin"             0x0 "$BUILD/bootloader/bootloader.bin"             0x8000 "$BUILD/partition_table/partition-table.bin"             0x10000 "$BUILD/furi_esp32.bin"             0xBF0000 "$BUILD/ota_data_initial.bin"
+          python -m esptool --chip esp32s3 merge_bin             --flash_size 16MB             --fill-flash-size 16MB             -o "$STAGE/firmware.bin"             0x0 "$BUILD/bootloader/bootloader.bin"             0x8000 "$BUILD/partition_table/partition-table.bin"             0x10000 "$BUILD/furi_esp32.bin"             0xBF0000 "$BUILD/ota_data_initial.bin"
 
           # The merged image deliberately remains a full 16 MiB image.
           # Absolute offsets in the partition table must remain valid for
