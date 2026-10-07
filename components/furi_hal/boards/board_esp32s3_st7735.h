@@ -2,24 +2,23 @@
  * @file board_esp32s3_st7735.h
  * ESP32-S3 N16R8 + ST7735S 1.8" 128x160 + five-button board.
  *
- * Fixed hardware configuration:
- *   LCD SCK=GPIO5, MOSI=GPIO6, DC=GPIO7, RST=GPIO15, CS=GPIO16, BL=GPIO4
- *   Buttons UP=GPIO11, DOWN=GPIO9, LEFT=GPIO12, RIGHT=GPIO13, OK=GPIO14
+ * LCD SCK=GPIO5, MOSI=GPIO6, DC=GPIO7, RST=GPIO15, CS=GPIO16, BL=GPIO4
+ * Buttons UP=GPIO9, DOWN=GPIO11, LEFT=GPIO12, RIGHT=GPIO13, OK=GPIO14
+ * microSD: CLK=GPIO5, MOSI=GPIO6, MISO=GPIO17, CS=GPIO18
  *
- * The board has Wi-Fi and BLE only. No SD/CC1101/NRF24/NFC/RFID/IR/touch/
- * vibro/speaker hardware is present.
+ * The LCD and SD card share SPI2_HOST. CS lines select the active device.
+ * User files (/ext) are stored on the microSD card, not LittleFS.
  */
 #pragma once
 
 #define BOARD_NAME        "ESP32-S3 N16R8 ST7735S 1.8"
 #define BOARD_ID          "esp32s3_st7735"
 #define BOARD_ST7735S     1
-#define BOARD_HAS_LITTLEFS 1
+#define BOARD_HAS_LITTLEFS 0
 #define BOARD_LITTLEFS_BASE_PATH "/littlefs"
 #define BOARD_LITTLEFS_PARTITION "littlefs"
 #define BOARD_TARGET      "esp32s3"
 
-/* Five active-low buttons with internal pull-ups. */
 #define BOARD_PIN_BUTTON_UP       9
 #define BOARD_PIN_BUTTON_DOWN    11
 #define BOARD_PIN_BUTTON_LEFT    12
@@ -29,19 +28,14 @@
 
 #define BOARD_PIN_BATTERY_ADC    UINT16_MAX
 #define BOARD_HAS_BATTERY        0
-#define FURI_HAL_POWER_VIRTUAL_CAPACITY_MAH (0U) /* No battery hardware on this board. */
+#define FURI_HAL_POWER_VIRTUAL_CAPACITY_MAH (0U)
 
-/* ST7735S SPI pins — DO NOT CHANGE. */
 #define BOARD_PIN_LCD_MOSI       6
 #define BOARD_PIN_LCD_SCLK       5
 #define BOARD_PIN_LCD_DC         7
 #define BOARD_PIN_LCD_CS        16
 #define BOARD_PIN_LCD_RST       15
 #define BOARD_PIN_LCD_BL         4
-
-/* The LCD is wired in landscape (160x128 logical framebuffer). 0xA0 was the
- * previous landscape orientation; 0x60 flips both axes while keeping MV set,
- * which is the true 180-degree counterpart for this direct esp_lcd setup. */
 
 #define BOARD_LCD_H_RES          160
 #define BOARD_LCD_V_RES          128
@@ -64,9 +58,13 @@
 #define BOARD_LCD_FG_COLOR_RB    0x5F03
 #define BOARD_LCD_BG_COLOR       0x0000
 
-/* No optional peripherals are fitted on this board. */
-#define BOARD_PIN_SD_CS          UINT16_MAX
-#define BOARD_PIN_SD_MISO        UINT16_MAX
+/* microSD over SPI2_HOST, sharing CLK/MOSI with the LCD. */
+#define BOARD_PIN_SD_SCLK         5
+#define BOARD_PIN_SD_MOSI         6
+#define BOARD_PIN_SD_MISO        17
+#define BOARD_PIN_SD_CS          18
+#define BOARD_HAS_SD_CARD         1
+
 #define BOARD_PIN_TOUCH_SCL      UINT16_MAX
 #define BOARD_PIN_TOUCH_SDA      UINT16_MAX
 #define BOARD_PIN_TOUCH_RST      UINT16_MAX
@@ -98,13 +96,12 @@
 #define BOARD_HAS_NRF24          0
 #define BOARD_HAS_TOUCH          0
 #define BOARD_HAS_ENCODER       0
-#define BOARD_HAS_SD_CARD       0
 #define BOARD_HAS_BLE           1
 #define BOARD_HAS_RGB_LED       0
 #define BOARD_HAS_VIBRO         0
 #define BOARD_HAS_SPEAKER       0
 #define BOARD_HAS_IR            0
-#define BOARD_HAS_IBUTTON       0
+#define BOARD_HAS_IBUTTON        0
 #define BOARD_HAS_RFID          0
 #define BOARD_HAS_NFC           0
 #define BOARD_HAS_SUBGHZ        0
