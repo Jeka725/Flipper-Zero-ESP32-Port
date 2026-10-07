@@ -75,7 +75,7 @@ jobs:
           mkdir -p "$STAGE"
 
           source ~/esp/esp-idf/export.sh
-          python -m esptool --chip esp32s3 merge_bin             --flash_size 16MB             -o "$STAGE/firmware.bin"             0x0 "$BUILD/bootloader/bootloader.bin"             0x8000 "$BUILD/partition_table/partition-table.bin"             0x10000 "$BUILD/furi_esp32.bin"             0xBF0000 "$BUILD/ota_data_initial.bin"             0xC20000 "$BUILD/littlefs.bin"
+          python -m esptool --chip esp32s3 merge_bin             --flash_size 16MB             --fill-flash-size 16MB             -o "$STAGE/firmware.bin"             0x0 "$BUILD/bootloader/bootloader.bin"             0x8000 "$BUILD/partition_table/partition-table.bin"             0x10000 "$BUILD/furi_esp32.bin"             0xBF0000 "$BUILD/ota_data_initial.bin"
 
           # The merged image deliberately remains a full 16 MiB image.
           # Absolute offsets in the partition table must remain valid for
@@ -89,7 +89,6 @@ jobs:
           cp wokwi/diagram.json "$STAGE/wokwi/diagram.json"
           cp wokwi/wokwi.toml "$STAGE/wokwi/wokwi.toml"
           cp "$STAGE/firmware.bin" "$STAGE/wokwi/firmware.bin"
-          cp "$BUILD/littlefs.bin" "$STAGE/wokwi/littlefs.bin"
 
       - name: Upload Wokwi test bundle
         uses: actions/upload-artifact@v7

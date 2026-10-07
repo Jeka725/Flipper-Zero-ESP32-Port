@@ -173,7 +173,11 @@ void furi_hal_display_init(void) {
     /* Initialize SPI bus */
     spi_bus_config_t bus_cfg = {
         .mosi_io_num = gpio_lcd_din.pin,
+#if defined(BOARD_HAS_SD_CARD) && BOARD_HAS_SD_CARD
+        .miso_io_num = gpio_sdcard_miso.pin,
+#else
         .miso_io_num = GPIO_NUM_NC,
+#endif
         .sclk_io_num = gpio_lcd_clk.pin,
         .quadwp_io_num = -1,
         .quadhd_io_num = -1,
